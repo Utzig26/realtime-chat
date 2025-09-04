@@ -1,0 +1,27 @@
+version: '3.8'
+
+# Development overrides
+services:
+  api:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=dev-jwt-secret-key
+      - CORS_ORIGIN=http://localhost:5000
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+    command: npm run dev
+
+  frontend:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_ENABLE_DEBUG=true
+    volumes:
+      - ./front-end:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
