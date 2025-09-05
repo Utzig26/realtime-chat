@@ -27,3 +27,19 @@ services:
       - /app/node_modules
       - /app/.next
     command: npm run dev -- --hostname 0.0.0.0 --port 5000
+
+  # Redis Commander - Web-based Redis management tool
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: chat-redis-commander
+    hostname: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=admin
+    depends_on:
+      - redis
+    networks:
+      - chat-network
