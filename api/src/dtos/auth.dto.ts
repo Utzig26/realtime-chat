@@ -3,25 +3,17 @@ import { UserResponseDTO } from './user.dto';
 
 export class AuthResponseDTO implements AuthResponse {
   user: UserResponseDTO;
-  tokens: {
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-  };
+  sessionId: string;
 
-  constructor(user: any, tokens: any) {
+  constructor(user: any, sessionId: string) {
     this.user = new UserResponseDTO(user);
-    this.tokens = {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresIn: tokens.expiresIn
-    };
+    this.sessionId = sessionId;
   }
 
   toJSON(): AuthResponse {
     return {
       user: this.user.toJSON(),
-      tokens: this.tokens
+      sessionId: this.sessionId
     };
   }
 }

@@ -1,20 +1,19 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { UserModel } from "../models";
 import { CreateUserRequest } from "../types/user.types";
 import { AuthResponseDTO } from "../dtos/auth.dto";
 import { ConflictError, AuthError, UserNotFoundError } from '../errors';
 import { LoginRequest } from '../types/auth.types';
-
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+import { SessionService, CreateSessionOptions } from './session.service';
+import { SessionResponse } from '../types/session.types';
 
 const SALT_ROUNDS = process.env.SALT_ROUNDS || 10;
 
 export class AuthService {
-  static async register(createUserRequest: CreateUserRequest): Promise<AuthResponseDTO> {
+  static async register(
+    createUserRequest: CreateUserRequest, 
+    sessionOptions: CreateSessionOptions = {}
+  ): Promise<{ user: any; sessionId: string }> {
     const { name, username, password } = createUserRequest;
     
     if (await UserModel.userExists(username)) throw new ConflictError('Username already exists');
@@ -26,12 +25,16 @@ export class AuthService {
       username: username,
       passwordHash: passwordHash,
     });
-    const tokens = this.generateTokens(user._id.toString());
 
-    return new AuthResponseDTO(user, tokens);
+    const sessionId = await SessionService.createSession(user._id.toString(), sessionOptions);
+
+    return { user, sessionId };
   }
 
-  static async login(loginRequest: LoginRequest): Promise<AuthResponseDTO> {
+  static async login(
+    loginRequest: LoginRequest, 
+    sessionOptions: CreateSessionOptions = {}
+  ): Promise<{ user: any; sessionId: string }> {
     const { username, password } = loginRequest;
     
     const user = await UserModel.findOneWithPassword({ username: username.toLowerCase() });
@@ -47,54 +50,39 @@ export class AuthService {
     user.lastSeen = new Date();
     await user.save();
 
-    const tokens = this.generateTokens(user._id.toString());
+    const sessionId = await SessionService.createSession(user._id.toString(), sessionOptions);
 
-    return new AuthResponseDTO(user, tokens);
+    return { user, sessionId };
   }
 
-  static async refreshToken(refreshToken: string): Promise<AuthResponseDTO> {
-    try {
-      const payload = jwt.verify(refreshToken, JWT_SECRET) as any;
-      
-      if (!payload.sub) {
-        throw new AuthError('Invalid refresh token');
-      }
-      const user = await UserModel.findByIdWithPassword(payload.sub);
-      if (!user) {
-        throw new UserNotFoundError('User not found');
-      }
+  static async logout(sessionId: string): Promise<void> {
+    await SessionService.deleteSession(sessionId);
+  }
 
-      const tokens = this.generateTokens(user._id.toString());
+  static async logoutAllSessions(userId: string): Promise<void> {
+    await SessionService.deleteAllUserSessions(userId);
+  }
 
-      return new AuthResponseDTO(user, tokens);
-    } catch (error) {
-      if (error instanceof jwt.JsonWebTokenError) {
-        throw new AuthError('Invalid or expired refresh token');
-      }
-      throw error;
-    }
+  static async getUserSessions(userId: string): Promise<SessionResponse[]> {
+    const sessions = await SessionService.getUserSessions(userId);
+    
+    return sessions.map(session => ({
+      sessionId: '', 
+      user: {
+        id: session.userId,
+        username: session.username,
+        name: session.name
+      },
+      createdAt: session.createdAt,
+      lastActivity: session.lastActivity
+    }));
+  }
+
+  static async extendSession(sessionId: string): Promise<void> {
+    await SessionService.extendSession(sessionId);
   }
 
   // private methods
-  private static generateTokens(userId: string) {
-
-    const accessToken = jwt.sign(
-      { sub: userId },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
-    );
-
-    const refreshToken = jwt.sign(
-      { sub: userId, t: Date.now() },
-      JWT_SECRET,
-      { expiresIn: JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions
-    );
-
-    return {
-      accessToken,
-      refreshToken
-    };
-  };
   
   private static async hashPassword(password: string): Promise<string> {
     return await bcrypt.hash(password, SALT_ROUNDS);

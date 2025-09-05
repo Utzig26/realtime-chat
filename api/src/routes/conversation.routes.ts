@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { ConversationController } from '../controllers/conversation.controller';
-import { authenticate } from '../middleware';
+import { sessionAuth } from '../middleware';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(sessionAuth);
 
 router.post('/', ConversationController.createConversation);
 

@@ -2,44 +2,79 @@ import { Request, Response } from 'express';
 import { createUserSchema } from "../schemas/user.schema";
 import { AuthService } from "../services/auth.service";
 import { asyncHandler } from "../middleware";
-import { setAuthCookies, clearAuthCookies } from "../middleware";
+import { setSessionCookie, clearSessionCookie } from "../middleware/sessionAuth";
 import { loginSchema } from "../schemas/auth.schema";
 import { AuthError } from '../errors';
+import { AuthenticatedRequest } from '../types/session.types';
 
 export class AuthController {
 
   static register = asyncHandler(async (req: Request, res: Response) => {
     const validatedCreateUserSchema = createUserSchema.parse(req.body);
-    const authResponse = await AuthService.register(validatedCreateUserSchema);
+    
+    const sessionOptions: any = {};
+    const userAgent = req.get('User-Agent');
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    
+    if (userAgent) sessionOptions.userAgent = userAgent;
+    if (ipAddress) sessionOptions.ipAddress = ipAddress;
+    
+    const { user, sessionId } = await AuthService.register(validatedCreateUserSchema, sessionOptions);
 
-    setAuthCookies(res, authResponse.tokens.accessToken, authResponse.tokens.refreshToken);
-    res.created(authResponse.toJSON(), 'User registered successfully');
+    setSessionCookie(res, sessionId);
+    res.created({
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        createdAt: user.createdAt
+      }
+    }, 'User registered successfully');
   });
 
   static login = asyncHandler(async (req: Request, res: Response) => {
     const validatedLoginSchema = loginSchema.parse(req.body);
-    const authResponse = await AuthService.login(validatedLoginSchema);
     
-   setAuthCookies(res, authResponse.tokens.accessToken, authResponse.tokens.refreshToken);
-   res.success(authResponse.toJSON(), 'Login successful');
+    const sessionOptions: any = {};
+    const userAgent = req.get('User-Agent');
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    
+    if (userAgent) sessionOptions.userAgent = userAgent;
+    if (ipAddress) sessionOptions.ipAddress = ipAddress;
+    
+    const { user, sessionId } = await AuthService.login(validatedLoginSchema, sessionOptions);
+    
+    setSessionCookie(res, sessionId);
+    res.success({
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        lastSeen: user.lastSeen,
+        createdAt: user.createdAt
+      }
+    }, 'Login successful');
   });
 
-  static refreshToken = asyncHandler(async (req: Request, res: Response) => {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
-      throw new AuthError('User is not logged in');
-    }
-
-    const authResponse = await AuthService.refreshToken(refreshToken);
-    
-    setAuthCookies(res, authResponse.tokens.accessToken, authResponse.tokens.refreshToken);
-    res.success(authResponse.toJSON(), 'Token refreshed successfully');
+  static extendSession = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    await AuthService.extendSession(req.sessionId);
+    res.success({}, 'Session extended successfully');
   });
 
-  static logout = asyncHandler(async (req: Request, res: Response) => {
-    // if you are already logged out... Lie and clear the already cleared cookies
-    clearAuthCookies(res);
-    
+  static logout = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    await AuthService.logout(req.sessionId);
+    clearSessionCookie(res);
     res.success({}, 'Logged out successfully');
+  });
+
+  static logoutAllSessions = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    await AuthService.logoutAllSessions(req.user._id.toString());
+    clearSessionCookie(res);
+    res.success({}, 'All sessions logged out successfully');
+  });
+
+  static getUserSessions = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const sessions = await AuthService.getUserSessions(req.user._id.toString());
+    res.success({ sessions }, 'User sessions retrieved successfully');
   });
 }

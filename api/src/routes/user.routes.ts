@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/user.controller';
-import { authenticate } from '../middleware';
+import { sessionAuth } from '../middleware';
 import { UserCacheStrategy } from '../cache';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(sessionAuth);
 
 router.get('/', UserCacheStrategy.userList(), UserController.getUsers);
 

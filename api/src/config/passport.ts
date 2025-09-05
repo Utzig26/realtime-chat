@@ -1,43 +1,41 @@
 import passport from 'passport';
-import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { UserModel } from '../models';
-import { AuthError } from '../errors';
+import { SessionService } from '../services/session.service';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
-
-const jwtOptions = {
-  // Try to extract from cookies, if not, try to extract from Authorization header
-  jwtFromRequest: ExtractJwt.fromExtractors([
-    (req) => {
-      return req.cookies?.accessToken || null;
-    },
-    ExtractJwt.fromAuthHeaderAsBearerToken()
-  ]),
-  secretOrKey: JWT_SECRET
-};
-
-const jwtStrategy = new JwtStrategy(jwtOptions, async (payload: any, done: any) => {
-  try {
-    const userId = payload.sub;
+const sessionStrategy = new (class extends passport.Strategy {
+  name = 'session';
+  
+  authenticate(req: any, options?: any) {
+    const sessionId = req.cookies?.sessionId;
     
-    if (!userId) {
-      return done(new AuthError('Invalid token payload'), false);
+    if (!sessionId) {
+      return this.fail('No session found');
     }
 
-    const user = await UserModel.findById(userId).select('-passwordHash');
-    
-    if (!user) {
-      return done(new AuthError('User not found'), false);
-    }
+    SessionService.validateSession(sessionId)
+      .then(async (sessionData) => {
+        if (!sessionData) {
+          return this.fail('Invalid or expired session');
+        }
 
-    return done(null, user);
-  } catch (error) {
-    return done(error, false);
+        const user = await UserModel.findById(sessionData.userId).select('-passwordHash');
+        
+        if (!user) {
+          return this.fail('User not found');
+        }
+
+        await SessionService.updateSessionActivity(sessionId);
+
+        return this.success(user);
+      })
+      .catch((error) => {
+        return this.error(error);
+      });
   }
-});
+})();
 
 export const configurePassport = () => {
-  passport.use('jwt', jwtStrategy);
+  passport.use('session', sessionStrategy);
 };
 
 export default passport;
