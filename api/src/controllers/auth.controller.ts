@@ -11,15 +11,17 @@ export class AuthController {
   static register = asyncHandler(async (req: Request, res: Response) => {
     const validatedCreateUserSchema = createUserSchema.parse(req.body);
     const authResponse = await AuthService.register(validatedCreateUserSchema);
-    
-    this.setAuthCookiesAndRespond(res, authResponse, 'User registered successfully', 201);
+
+    setAuthCookies(res, authResponse.tokens.accessToken, authResponse.tokens.refreshToken);
+    res.created(authResponse.toJSON(), 'User registered successfully');
   });
 
   static login = asyncHandler(async (req: Request, res: Response) => {
     const validatedLoginSchema = loginSchema.parse(req.body);
     const authResponse = await AuthService.login(validatedLoginSchema);
     
-    this.setAuthCookiesAndRespond(res, authResponse, 'Login successful');
+   setAuthCookies(res, authResponse.tokens.accessToken, authResponse.tokens.refreshToken);
+   res.success(authResponse.toJSON(), 'Login successful');
   });
 
   static refreshToken = asyncHandler(async (req: Request, res: Response) => {
@@ -30,7 +32,8 @@ export class AuthController {
 
     const authResponse = await AuthService.refreshToken(refreshToken);
     
-    this.setAuthCookiesAndRespond(res, authResponse, 'Token refreshed successfully');
+    setAuthCookies(res, authResponse.tokens.accessToken, authResponse.tokens.refreshToken);
+    res.success(authResponse.toJSON(), 'Token refreshed successfully');
   });
 
   static logout = asyncHandler(async (req: Request, res: Response) => {
@@ -39,19 +42,4 @@ export class AuthController {
     
     res.success({}, 'Logged out successfully');
   });
-
-  private static setAuthCookiesAndRespond(
-    res: Response, 
-    authResponse: any, 
-    message: string, 
-    statusCode: number = 200
-  ) {
-    setAuthCookies(res, authResponse.tokens.accessToken, authResponse.tokens.refreshToken);
-    
-    if (statusCode === 201) {
-      res.created({ user: authResponse.user }, message);
-    } else {
-      res.success({ user: authResponse.user }, message);
-    }
-  }
 }
