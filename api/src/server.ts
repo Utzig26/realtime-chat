@@ -6,6 +6,7 @@ import { connectDatabase } from './config/database';
 import { configurePassport } from './config/passport';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
+import conversationRoutes from './routes/conversation.routes';
 import { errorHandler, responseHandler } from './middleware';
 
 const app = express();
@@ -39,6 +40,7 @@ export const startServer = async () => {
 
     app.use('/auth', authRoutes);
     app.use('/users', userRoutes);
+    app.use('/conversations', conversationRoutes);
     app.use('/', route);
 
     app.use(errorHandler);

@@ -29,7 +29,6 @@ const UserSchema = new Schema<IUser>({
     type: String,
     required: [true, 'Username is required'],
     unique: true,
-    index: true,
     trim: true,
     lowercase: true,
     minlength: [3, 'Username must be at least 3 characters'],
