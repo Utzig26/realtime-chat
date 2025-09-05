@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { UserModel } from "../models";
 import { CreateUserRequest, LoginRequest, User } from "../types/user.types";
 import jwt from 'jsonwebtoken';
+import { ConflictError, AuthError } from '../errors';
 
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
@@ -13,7 +14,7 @@ export class AuthService {
     const { name, username, password } = createUserRequest;
     
     if (await this.checkIfUserExists(username)) {
-      throw new Error('Username already exists');
+      throw new ConflictError('Username already exists');
     }
 
     const hashedPassword = await this.hashPassword(password);
@@ -34,12 +35,12 @@ export class AuthService {
     
     const user = await UserModel.findOne({ username: username.toLowerCase() });
     if (!user) {
-      throw new Error('Invalid username or password');
+      throw new AuthError('Invalid username or password');
     }
 
     const isPasswordValid = await this.comparePassword(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new Error('Invalid username or password');
+      throw new AuthError('Invalid username or password');
     }
 
     user.lastSeen = new Date();
