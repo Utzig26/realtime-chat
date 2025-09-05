@@ -62,4 +62,7 @@ const UserSchema = new Schema<IUser>({
   }
 });
 
+UserSchema.index({ username: 1 });
+UserSchema.index({ lastSeen: -1 });
+
 export const UserModel = mongoose.model<IUser>('User', UserSchema);
