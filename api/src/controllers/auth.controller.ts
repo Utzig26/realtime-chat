@@ -6,15 +6,15 @@ import { asyncHandler } from "../middleware";
 export class AuthController {
   static register = asyncHandler(async (req: Request, res: Response) => {
     const validatedCreateUserSchema = createUserSchema.parse(req.body);
-    const result = await AuthService.register(validatedCreateUserSchema);
+    const authResponse = await AuthService.register(validatedCreateUserSchema);
     
-    res.created(result, 'User registered successfully');
+    res.created(authResponse.toJSON(), 'User registered successfully');
   });
 
   static login = asyncHandler(async (req: Request, res: Response) => {
     const validatedLoginSchema = loginSchema.parse(req.body);
-    const result = await AuthService.login(validatedLoginSchema);
+    const authResponse = await AuthService.login(validatedLoginSchema);
     
-    res.success(result, 'Login successful');
+    res.success(authResponse.toJSON(), 'Login successful');
   });
 }
