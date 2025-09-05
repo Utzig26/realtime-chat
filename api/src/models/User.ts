@@ -65,4 +65,12 @@ const UserSchema = new Schema<IUser>({
 UserSchema.index({ username: 1 });
 UserSchema.index({ lastSeen: -1 });
 
+UserSchema.virtual('isOnline').get(function() {
+  if (!this.lastSeen) return false;
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  return this.lastSeen > fiveMinutesAgo;
+});
+
+UserSchema.set('toJSON', { virtuals: true });
+
 export const UserModel = mongoose.model<IUser>('User', UserSchema);
