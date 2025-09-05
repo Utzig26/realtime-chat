@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { createUserSchema } from "../schemas/user.schema";
 import { AuthService } from "../services/auth.service";
 import { asyncHandler } from "../middleware";
-import { setAuthCookies, clearAuthCookies } from "../middleware/cookieAuth";
+import { setAuthCookies, clearAuthCookies } from "../middleware";
 import { loginSchema } from "../schemas/auth.schema";
 import { AuthError } from '../errors';
 

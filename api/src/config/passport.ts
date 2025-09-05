@@ -6,7 +6,13 @@ import { AuthError } from '../errors';
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
 const jwtOptions = {
-  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  // Try to extract from cookies, if not, try to extract from Authorization header
+  jwtFromRequest: ExtractJwt.fromExtractors([
+    (req) => {
+      return req.cookies?.accessToken || null;
+    },
+    ExtractJwt.fromAuthHeaderAsBearerToken()
+  ]),
   secretOrKey: JWT_SECRET
 };
 
