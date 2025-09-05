@@ -23,3 +23,12 @@ export interface UserResponse {
   avatarUrl?: string;
   isOnline: boolean;
 }
+
+export interface UpdateUserRequest {
+  name?: string | undefined;
+  avatarUrl?: string | undefined;
+}
+
+export interface GetUsersByActivityRequest {
+  online?: boolean;
+}

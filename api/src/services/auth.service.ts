@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { UserModel } from "../models";
 import { CreateUserRequest } from "../types/user.types";
 import { AuthResponseDTO } from "../dtos/auth.dto";
-import jwt from 'jsonwebtoken';
-import { ConflictError, AuthError } from '../errors';
+import { ConflictError, AuthError, UserNotFoundError } from '../errors';
 import { LoginRequest } from '../types/auth.types';
 
 
@@ -11,21 +11,20 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 
+const SALT_ROUNDS = process.env.SALT_ROUNDS || 10;
+
 export class AuthService {
   static async register(createUserRequest: CreateUserRequest): Promise<AuthResponseDTO> {
     const { name, username, password } = createUserRequest;
     
-    if (await this.checkIfUserExists(username)) {
-      throw new ConflictError('Username already exists');
-    }
+    if (await UserModel.userExists(username)) throw new ConflictError('Username already exists');
 
-    const hashedPassword = await this.hashPassword(password);
-    createUserRequest.password = hashedPassword;
+    const passwordHash = await this.hashPassword(password);
 
     const user = await UserModel.create({
       name: name,
       username: username,
-      passwordHash: hashedPassword,
+      passwordHash: passwordHash,
     });
     const tokens = this.generateTokens(user._id.toString());
 
@@ -35,7 +34,7 @@ export class AuthService {
   static async login(loginRequest: LoginRequest): Promise<AuthResponseDTO> {
     const { username, password } = loginRequest;
     
-    const user = await UserModel.findOne({ username: username.toLowerCase() });
+    const user = await UserModel.findOneWithPassword({ username: username.toLowerCase() });
     if (!user) {
       throw new AuthError('Invalid username or password');
     }
@@ -60,9 +59,9 @@ export class AuthService {
       if (!payload.sub) {
         throw new AuthError('Invalid refresh token');
       }
-      const user = await UserModel.findById(payload.sub);
+      const user = await UserModel.findByIdWithPassword(payload.sub);
       if (!user) {
-        throw new AuthError('User not found');
+        throw new UserNotFoundError('User not found');
       }
 
       const tokens = this.generateTokens(user._id.toString());
@@ -93,18 +92,12 @@ export class AuthService {
 
     return {
       accessToken,
-      refreshToken,
-      expiresIn: 15 * 60
+      refreshToken
     };
   };
-
-  private static async checkIfUserExists(username: string): Promise<boolean> {
-    const userExists = await UserModel.findOne({ username }) !== null;
-    return userExists;
-  }
   
   private static async hashPassword(password: string): Promise<string> {
-    return await bcrypt.hash(password, 10);
+    return await bcrypt.hash(password, SALT_ROUNDS);
   }
 
   private static async comparePassword(password: string, hashedPassword: string): Promise<boolean> {
