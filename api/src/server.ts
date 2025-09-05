@@ -1,6 +1,7 @@
 import express from 'express';
 import { Router, Request, Response } from 'express';
 import { connectDatabase } from './config/database';
+import authRoutes from './routes/auth.routes';
 
 const app = express();
 const route = Router();
@@ -11,6 +12,19 @@ const startServer = async () => {
   try {
     await connectDatabase();
     
+    app.use(express.json());
+
+    route.get('/', (req: Request, res: Response) => {
+      res.json({ 
+        message: 'Realtime Chat API',
+        status: 'running',
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    app.use('/auth', authRoutes);
+    app.use('/', route);
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} | ${NODE_ENV}`);
     });
@@ -19,18 +33,6 @@ const startServer = async () => {
     process.exit(1);
   }
 };
-
-app.use(express.json());
-
-route.get('/', (req: Request, res: Response) => {
-  res.json({ 
-    message: 'Realtime Chat API',
-    status: 'running',
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.use('/', route);
 
 startServer();
 
