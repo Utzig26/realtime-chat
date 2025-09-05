@@ -1,12 +1,16 @@
 import mongoose, { Document, Schema, Query } from 'mongoose';
-import { User } from '../types/user.types';
 
-export interface IUser extends User, Document {
+export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   id: string;
+  name: string;
+  username: string;
   passwordHash: string;
+  createdAt: Date;
+  lastSeen?: Date;
+  avatarUrl?: string;
+  isOnline?: boolean;
 }
-
 export interface IUserModel extends mongoose.Model<IUser> {
   userExists(username: string): Promise<boolean>;
   findByIdWithPassword(id: string): Query<IUser | null, IUser>;
@@ -60,10 +64,11 @@ const UserSchema = new Schema<IUser>({
   timestamps: false,
   toJSON: {
     transform: function(_doc, ret) {
-      const { passwordHash, _id, id, ...userWithoutPassword } = ret;
+      const {  id, _id, ...userWithoutId } = ret;
+      console.log(userWithoutId);
       return {
         id: _id.toString(),
-        ...userWithoutPassword
+        ...userWithoutId
       };
     }
   }
