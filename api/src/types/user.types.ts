@@ -14,10 +14,6 @@ export interface CreateUserRequest {
   password: string;
 }
 
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
 export interface UserResponse {
   id: string;
   name: string;

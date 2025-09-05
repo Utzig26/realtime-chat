@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { CreateUserRequest, LoginRequest } from '../types/user.types';
+import { CreateUserRequest } from '../types/user.types';
+import { LoginRequest } from '../types/auth.types';
 
 export const createUserSchema: z.ZodType<CreateUserRequest> = z.object({
   name: z.string()
