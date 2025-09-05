@@ -1,6 +1,5 @@
-import { UserResponse } from "../types/user.types";
+import { UserResponse, PaginationMeta } from "../types/user.types";
 
-const FIVE_MINUTES_IN_MS = 5 * 60 * 1000;
 export class UserResponseDTO implements UserResponse {
   id: string;
   name: string;
@@ -17,13 +16,7 @@ export class UserResponseDTO implements UserResponse {
     this.createdAt = user.createdAt;
     this.lastSeen = user.lastSeen;
     this.avatarUrl = user.avatarUrl;
-    this.isOnline = this.calculateIsOnline(user.lastSeen);
-  }
-
-  private calculateIsOnline(lastSeen?: Date): boolean {
-    if (!lastSeen) return false;
-    const fiveMinutesAgo = new Date(Date.now() - FIVE_MINUTES_IN_MS);
-    return lastSeen > fiveMinutesAgo;
+    this.isOnline = user.isOnline; // Now comes from the virtual field
   }
 
   toJSON(): UserResponse {
@@ -58,6 +51,24 @@ export class UserListResponseDTO {
   toJSON() {
     return {
       users: this.users.map(user => user.toJSON())
+    };
+  }
+}
+
+// DTO for paginated user list responses
+export class PaginatedUserListResponseDTO {
+  users: UserResponseDTO[];
+  pagination: PaginationMeta;
+
+  constructor(users: any[], pagination: PaginationMeta) {
+    this.users = users.map(user => new UserResponseDTO(user));
+    this.pagination = pagination;
+  }
+
+  toJSON() {
+    return {
+      users: this.users.map(user => user.toJSON()),
+      pagination: this.pagination
     };
   }
 }

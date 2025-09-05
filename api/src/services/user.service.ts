@@ -1,12 +1,42 @@
 import { UserModel } from '../models';
 import { UserNotFoundError, InvalidUserDataError } from '../errors';
-import { UpdateUserRequest, GetUsersByActivityRequest } from '../types/user.types';
-import { UserResponseDTO, UserListResponseDTO } from '../dtos/user.dto';
+import { UpdateUserRequest, GetUsersByActivityRequest, PaginationParams } from '../types/user.types';
+import { UserResponseDTO, UserListResponseDTO, PaginatedUserListResponseDTO } from '../dtos/user.dto';
 
 export class UserService {
-  static async getAllUsers(): Promise<UserListResponseDTO> {
-    const users = await UserModel.find().sort({ createdAt: -1 });
-    return new UserListResponseDTO(users);
+
+  static async getUsers(params: PaginationParams): Promise<PaginatedUserListResponseDTO> {
+    const { page = 1, limit = 10 } = params;
+    const skip = (page - 1) * limit;
+
+    const totalUsers = await UserModel.countDocuments();
+    const userDocs = await UserModel.aggregate([
+      {
+        $sort: {
+          isOnline: -1, 
+          createdAt: -1 
+        }
+      },
+      {
+        $skip: skip
+      },
+      {
+        $limit: limit
+      }
+    ]);
+
+    const users = userDocs.map(doc => new UserModel(doc));
+
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    return new PaginatedUserListResponseDTO(users, {
+      page,
+      limit,
+      totalUsers,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    });
   }
 
   static async getUserById(userId: string): Promise<UserResponseDTO> {

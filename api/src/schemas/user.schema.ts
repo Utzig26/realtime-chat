@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CreateUserRequest } from '../types/user.types';
+import { CreateUserRequest, PaginationParams } from '../types/user.types';
 
 export const createUserSchema: z.ZodType<CreateUserRequest> = z.object({
   name: z.string()
@@ -34,5 +34,16 @@ export const getUserByIdSchema = z.object({
   id: z.string()
     .min(1, 'User ID is required')
     .regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID format')
+});
+
+export const getUsersWithPaginationSchema: z.ZodType<PaginationParams> = z.object({
+  page: z.string()
+    .optional()
+    .transform((val) => val ? parseInt(val, 10) : 1)
+    .refine((val) => val > 0, 'Page must be greater than 0'),
+  limit: z.string()
+    .optional()
+    .transform((val) => val ? parseInt(val, 10) : 10)
+    .refine((val) => val > 0 && val <= 100, 'Limit must be between 1 and 100')
 });
 

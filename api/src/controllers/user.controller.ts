@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
 import { asyncHandler } from '../middleware';
-import { updateUserSchema, getUserByIdSchema } from '../schemas/user.schema';
+import { updateUserSchema, getUserByIdSchema, getUsersWithPaginationSchema } from '../schemas/user.schema';
 
 export class UserController {
 
   static getUsers = asyncHandler(async (req: Request, res: Response) => {
-    const userListDTO = await UserService.getAllUsers();
-
-    res.success(userListDTO.toJSON(), 'Users retrieved successfully');
+    const validatedQuery = getUsersWithPaginationSchema.parse(req.query);
+    const paginatedUserListDTO = await UserService.getUsers(validatedQuery);
+    res.success(paginatedUserListDTO.toJSON(), 'Users retrieved successfully');
   });
 
   static getProfile = asyncHandler(async (req: Request, res: Response) => {

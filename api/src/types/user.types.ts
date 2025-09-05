@@ -32,3 +32,17 @@ export interface UpdateUserRequest {
 export interface GetUsersByActivityRequest {
   online?: boolean;
 }
+
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  totalUsers: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
