@@ -1,6 +1,7 @@
 import { UserResponse } from "../types/user.types";
 
-export class UserResponseDTO  implements UserResponse {
+const FIVE_MINUTES_IN_MS = 5 * 60 * 1000;
+export class UserResponseDTO implements UserResponse {
   id: string;
   name: string;
   username: string;
@@ -16,7 +17,13 @@ export class UserResponseDTO  implements UserResponse {
     this.createdAt = user.createdAt;
     this.lastSeen = user.lastSeen;
     this.avatarUrl = user.avatarUrl;
-    this.isOnline = user.isOnline || false;
+    this.isOnline = this.calculateIsOnline(user.lastSeen);
+  }
+
+  private calculateIsOnline(lastSeen?: Date): boolean {
+    if (!lastSeen) return false;
+    const fiveMinutesAgo = new Date(Date.now() - FIVE_MINUTES_IN_MS);
+    return lastSeen > fiveMinutesAgo;
   }
 
   toJSON(): UserResponse {
@@ -37,5 +44,20 @@ export class UserResponseDTO  implements UserResponse {
     }
 
     return response;
+  }
+}
+
+// DTO for user list responses
+export class UserListResponseDTO {
+  users: UserResponseDTO[];
+
+  constructor(users: any[]) {
+    this.users = users.map(user => new UserResponseDTO(user));
+  }
+
+  toJSON() {
+    return {
+      users: this.users.map(user => user.toJSON())
+    };
   }
 }

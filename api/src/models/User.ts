@@ -1,10 +1,16 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Query } from 'mongoose';
 import { User } from '../types/user.types';
 
 export interface IUser extends User, Document {
   _id: mongoose.Types.ObjectId;
   id: string;
   passwordHash: string;
+}
+
+export interface IUserModel extends mongoose.Model<IUser> {
+  userExists(username: string): Promise<boolean>;
+  findByIdWithPassword(id: string): Query<IUser | null, IUser>;
+  findOneWithPassword(conditions: any): Query<IUser | null, IUser>;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -28,7 +34,8 @@ const UserSchema = new Schema<IUser>({
   },
   passwordHash: {
     type: String,
-    required: [true, 'Password hash is required']
+    required: [true, 'Password hash is required'],
+    select: false
   },
   createdAt: {
     type: Date,
@@ -65,12 +72,18 @@ const UserSchema = new Schema<IUser>({
 UserSchema.index({ username: 1 });
 UserSchema.index({ lastSeen: -1 });
 
-UserSchema.virtual('isOnline').get(function() {
-  if (!this.lastSeen) return false;
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-  return this.lastSeen > fiveMinutesAgo;
-});
+UserSchema.set('toJSON', { virtuals: false });
 
-UserSchema.set('toJSON', { virtuals: true });
+UserSchema.statics.userExists = function(username: string): Promise<boolean> {
+  return this.findOne({ username }).then((user: IUser | null) => user !== null);
+};
 
-export const UserModel = mongoose.model<IUser>('User', UserSchema);
+UserSchema.statics.findByIdWithPassword = function(id: string) {
+  return this.findById(id).select('+passwordHash');
+};
+
+UserSchema.statics.findOneWithPassword = function(conditions: any) {
+  return this.findOne(conditions).select('+passwordHash');
+};
+
+export const UserModel = mongoose.model<IUser, IUserModel>('User', UserSchema);
