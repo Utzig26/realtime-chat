@@ -4,6 +4,7 @@ export interface Message {
   senderId: string;
   text: string;
   createdAt: Date;
+  statusMap?: Record<string, 'sent' | 'delivered' | 'read'> | undefined;
 }
 
 export interface CreateMessageRequest {
@@ -19,6 +20,7 @@ export interface MessageResponse {
   senderUsername: string;
   text: string;
   createdAt: Date;
+  statusMap?: Record<string, 'sent' | 'delivered' | 'read'> | undefined;
 }
 
 export interface GetMessagesRequest {
@@ -40,4 +42,8 @@ export interface MessageWithSender extends Message {
     username: string;
     avatarUrl?: string;
   };
+}
+
+export interface MarkMessagesAsReadResponse {
+  markedCount: number;
 }

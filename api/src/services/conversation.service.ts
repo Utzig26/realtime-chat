@@ -1,6 +1,7 @@
 import { ConversationModel } from '../models';
 import { ConversationResponseDTO } from '../dtos/conversation.dto';
 import { ConflictError, NotFoundError, ValidationError } from '../errors';
+import { ConversationValidator } from './conversation-validator.service';
 import mongoose from 'mongoose';
 
 export class ConversationService {
@@ -35,24 +36,9 @@ export class ConversationService {
   }
 
   static async getConversationById(conversationId: string, userId: string): Promise<ConversationResponseDTO> {
-    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
-      throw new ValidationError('Invalid conversation ID');
-    }
-
-    const conversation = await ConversationModel.findById(conversationId)
-      .populate('participants', 'name username');
-
-    if (!conversation) {
-      throw new NotFoundError('Conversation not found');
-    }
-
-    const isParticipant = conversation.participants.some(
-      participant => participant._id.toString() === userId
-    );
-
-    if (!isParticipant) {
-      throw new NotFoundError('Conversation not found');
-    }
+    const conversation = await ConversationValidator.validateConversationAccess(conversationId, userId);
+    
+    await conversation.populate('participants', 'name username');
 
     return new ConversationResponseDTO(conversation);
   }

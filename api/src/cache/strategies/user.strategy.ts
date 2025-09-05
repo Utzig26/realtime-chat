@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import { CacheMiddleware } from '../middleware';
+import { User } from '../../types/user.types';
 
 const TTL = {
   USER_BY_ID: 300,
@@ -34,7 +35,7 @@ export class UserCacheStrategy {
 
   static currentUser() {
     return (req: Request, res: any, next: any) => {
-      const userId = (req.user as any)?._id?.toString();
+      const userId = (req.user as User).id.toString();
       const middleware = CacheMiddleware.cache({
         key: `user:current:${userId}`,
         ttl: TTL.CURRENT_USER,
