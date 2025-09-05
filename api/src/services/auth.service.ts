@@ -53,6 +53,33 @@ export class AuthService {
     return new AuthResponseDTO(user, tokens);
   }
 
+  static async refreshToken(refreshToken: string): Promise<AuthResponseDTO> {
+    try {
+      // Verify refresh token
+      const payload = jwt.verify(refreshToken, JWT_SECRET) as any;
+      
+      if (!payload.sub) {
+        throw new AuthError('Invalid refresh token');
+      }
+
+      // Find user
+      const user = await UserModel.findById(payload.sub);
+      if (!user) {
+        throw new AuthError('User not found');
+      }
+
+      // Generate new tokens
+      const tokens = this.generateTokens(user._id.toString());
+
+      return new AuthResponseDTO(user, tokens);
+    } catch (error) {
+      if (error instanceof jwt.JsonWebTokenError) {
+        throw new AuthError('Invalid or expired refresh token');
+      }
+      throw error;
+    }
+  }
+
   // private methods
   private static generateTokens(userId: string) {
 

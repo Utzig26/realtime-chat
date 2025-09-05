@@ -1,6 +1,8 @@
 import express from 'express';
 import { Router, Request, Response } from 'express';
+import cookieParser from 'cookie-parser';
 import { connectDatabase } from './config/database';
+import { configurePassport } from './config/passport';
 import authRoutes from './routes/auth.routes';
 import { errorHandler, responseHandler } from './middleware';
 
@@ -13,7 +15,10 @@ const startServer = async () => {
   try {
     await connectDatabase();
     
+    configurePassport();
+    
     app.use(express.json());
+    app.use(cookieParser());
     app.use(responseHandler);
 
     route.get('/', (req: Request, res: Response) => {
