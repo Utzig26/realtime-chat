@@ -1,9 +1,11 @@
 import express from 'express';
 import { Router, Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import { connectDatabase } from './config/database';
 import { configurePassport } from './config/passport';
 import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 import { errorHandler, responseHandler } from './middleware';
 
 const app = express();
@@ -17,6 +19,13 @@ const startServer = async () => {
     
     configurePassport();
     
+    app.use(cors({
+      origin: ['http://localhost:3001', 'http://localhost:5000'], 
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+    }));
+    
     app.use(express.json());
     app.use(cookieParser());
     app.use(responseHandler);
@@ -29,6 +38,7 @@ const startServer = async () => {
     });
 
     app.use('/auth', authRoutes);
+    app.use('/users', userRoutes);
     app.use('/', route);
 
     app.use(errorHandler);
