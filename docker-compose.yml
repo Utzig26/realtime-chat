@@ -42,6 +42,7 @@ services:
       - JWT_SECRET=aderbs123
       - JWT_EXPIRES_IN=7d
       - CORS_ORIGIN=http://localhost:5000
+    command: ["npm", "run", "start:cluster"]
     depends_on:
       - mongo
       - redis

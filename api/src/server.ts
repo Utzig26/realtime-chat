@@ -13,7 +13,7 @@ const route = Router();
 const PORT = process.env.PORT;
 const NODE_ENV = process.env.NODE_ENV;
 
-const startServer = async () => {
+export const startServer = async () => {
   try {
     await connectDatabase();
     
@@ -52,5 +52,8 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Start server if this file is run directly (not imported by cluster)
+if (require.main === module) {
+  startServer();
+}
 
