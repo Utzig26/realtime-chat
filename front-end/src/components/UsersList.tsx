@@ -5,6 +5,7 @@ import { useUsersAndConversations, UserWithConversation } from '@/hooks/useUsers
 import { useAuthStore } from '@/stores/auth.store'
 import UserListItem from './UserListItem'
 import { Loading } from './Loading'
+import Swal from 'sweetalert2'
 
 interface UsersListProps {
   onUserSelect?: (user: UserWithConversation) => void
@@ -61,15 +62,33 @@ export default function UsersList({ onUserSelect }: UsersListProps) {
   }, [users, conversations, currentUser])
 
   const handleUserClick = async (user: UserWithConversation) => {
-    setSelectedUserId(user.id)
-    
-    if (onUserSelect) {
-      onUserSelect(user)
+    // If user already has a conversation, just select them
+    if (user.conversation) {
+      setSelectedUserId(user.id)
+      if (onUserSelect) {
+        onUserSelect(user)
+      }
+      return
     }
 
-    if (!user.conversation) {
+    const result = await Swal.fire({
+      title: `Começar uma conversa com ${user.name}?`,
+      text: `Ele será notificado!`,
+      showCancelButton: true,
+      confirmButtonText: 'Sim',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    })
+
+    if (result.isConfirmed) {
       try {
-        await createConversation(user.id)
+        const newConversation = await createConversation(user.id)
+        if (newConversation) {
+          setSelectedUserId(user.id)
+          if (onUserSelect) {
+            onUserSelect(user)
+          }
+        }
       } catch (error) {
         console.error('Failed to create conversation:', error)
       }
