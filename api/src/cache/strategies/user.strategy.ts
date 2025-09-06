@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import { CacheMiddleware } from '../middleware';
+import { CacheService } from '../service';
 import { User } from '../../types/user.types';
 
 const TTL = {
@@ -47,5 +48,18 @@ export class UserCacheStrategy {
 
   static invalidateUser() {
     return CacheMiddleware.invalidate(['user:*', 'users:list:*']);
+  }
+
+  static async invalidateUserCache(): Promise<void> {
+    const cacheService = CacheService.getInstance();
+    try {
+      await Promise.all([
+        cacheService.delPattern('user:*'),
+        cacheService.delPattern('users:list:*')
+      ]);
+      console.log('User cache invalidated successfully');
+    } catch (error) {
+      console.error('Failed to invalidate user cache:', error);
+    }
   }
 }

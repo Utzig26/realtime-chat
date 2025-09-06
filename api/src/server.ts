@@ -50,10 +50,18 @@ export const startServer = async () => {
 
     await initializeSocket(server);
 
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT} | ${NODE_ENV}`);
+    // Only listen if not in cluster mode (cluster handles listening)
+    if (!process.env.WORKER_ID) {
+      server.listen(PORT, () => {
+        console.log(`Server running on port ${PORT} | ${NODE_ENV}`);
+        console.log('Socket.IO server initialized');
+      });
+    } else {
+      console.log(`Worker ${process.env.WORKER_ID} server configured | ${NODE_ENV}`);
       console.log('Socket.IO server initialized');
-    });
+    }
+
+    return server;
   } catch (error) {
     console.error('Error starting server:', error);
     process.exit(1);

@@ -13,9 +13,11 @@ export class MessageResponseDTO implements MessageResponse {
   constructor(message: any) {
     this.id = message._id?.toString() || message.id;
     this.conversationId = message.conversationId?.toString() || message.conversationId;
-    this.senderId = message.senderId?.toString() || message.senderId;
-    this.senderName = message.senderName || message.sender?.name || message.senderId?.name;
-    this.senderUsername = message.senderUsername || message.sender?.username || message.senderId?.username;
+    
+    this.senderId = message.senderId._id.toString();
+    this.senderName = message.senderName || message.sender?.name;
+    this.senderUsername = message.senderUsername || message.sender?.username;
+    
     this.text = message.text;
     this.createdAt = message.createdAt;
     this.statusMap = message.statusMap ? Object.fromEntries(message.statusMap) as Record<string, 'sent' | 'delivered' | 'read'> : undefined;

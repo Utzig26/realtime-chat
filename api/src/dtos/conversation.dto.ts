@@ -4,11 +4,12 @@ import { UserResponseDTO } from './user.dto';
 export class ConversationResponseDTO implements ConversationResponse {
   id: string;
   participants: UserResponseDTO[];
+  unreadCount?: number;
   createdAt: Date;
   updatedAt: Date;
   lastMessageAt?: Date;
 
-  constructor(conversation: any) {
+  constructor(conversation: any, userId?: string) {
     this.id = conversation._id?.toString() || conversation.id;
     this.participants = conversation.participants?.map((participant: any) => 
       new UserResponseDTO(participant)
@@ -16,12 +17,17 @@ export class ConversationResponseDTO implements ConversationResponse {
     this.createdAt = conversation.createdAt;
     this.updatedAt = conversation.updatedAt;
     this.lastMessageAt = conversation.lastMessageAt;
+    
+    if (userId && conversation.unreadMessages) {
+      this.unreadCount = conversation.unreadMessages.get(userId) || 0;
+    }
   }
 
   toJSON(): ConversationResponse {
     return {
       id: this.id,
       participants: this.participants.map(p => p.toJSON()),
+      ...(this.unreadCount !== undefined && { unreadCount: this.unreadCount }),
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       ...(this.lastMessageAt && { lastMessageAt: this.lastMessageAt })
@@ -38,8 +44,8 @@ export class ConversationWithLastMessageDTO extends ConversationResponseDTO impl
     createdAt: Date;
   };
 
-  constructor(conversation: any) {
-    super(conversation);
+  constructor(conversation: any, userId?: string) {
+    super(conversation, userId);
     
     if (conversation.lastMessage) {
       this.lastMessage = {
@@ -63,9 +69,9 @@ export class ConversationWithLastMessageDTO extends ConversationResponseDTO impl
 export class ConversationListResponseDTO {
   conversations: ConversationWithLastMessageDTO[];
 
-  constructor(conversations: any[]) {
+  constructor(conversations: any[], userId?: string) {
     this.conversations = conversations.map(conversation => 
-      new ConversationWithLastMessageDTO(conversation)
+      new ConversationWithLastMessageDTO(conversation, userId)
     );
   }
 

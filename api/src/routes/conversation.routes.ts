@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { ConversationController } from '../controllers/conversation.controller';
-import { sessionAuth } from '../middleware';
+import { sessionAuth, updateLastSeen } from '../middleware';
 
 const router = Router();
 
 router.use(sessionAuth);
+router.use(updateLastSeen);
 
 router.post('/', ConversationController.createConversation);
 router.get('/', ConversationController.getUserConversations);

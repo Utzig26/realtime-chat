@@ -1,12 +1,19 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
+import { createAdapter as createClusterAdapter } from '@socket.io/cluster-adapter';
 import { createClient } from 'redis';
+import cluster from 'cluster';
 import { MessageService } from '../services/message.service';
 import { SessionService } from '../services/session.service';
-import { UserModel } from '../models';
+import { UserModel, ConversationModel } from '../models';
+import { MessageNotification, UnreadCountUpdate } from '../types/message.types';
+
+let io: SocketIOServer | null = null;
 
 export const initializeSocket = async (server: any): Promise<SocketIOServer> => {
-  const io = new SocketIOServer(server, {
+  const workerId = process.env.WORKER_ID || 'unknown';
+  
+  io = new SocketIOServer(server, {
     cors: {
       origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000'],
       methods: ['GET', 'POST'],
@@ -15,25 +22,48 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
     pingTimeout: 60000,
     pingInterval: 25000,
     transports: ['polling', 'websocket'],
-    allowEIO3: true
+    allowEIO3: true,
+    connectionStateRecovery: {
+      maxDisconnectionDuration: 2 * 60 * 1000,
+      skipMiddlewares: true,
+    }
   });
 
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-  
-  try {
-    const pubClient = createClient({ url: redisUrl });
-    const subClient = pubClient.duplicate();
+  if (cluster.isWorker) {
+    console.log(`🔗 Socket.IO instance created for worker ${workerId} (adapter will be set in cluster)`);
+  } else {
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     
-    await Promise.all([
-      pubClient.connect(),
-      subClient.connect()
-    ]);
-    
-    io.adapter(createAdapter(pubClient, subClient));
-    console.log('Socket.IO Redis adapter configured for multi-instance support');
-  } catch (error) {
-    console.warn('Failed to configure Redis adapter for Socket.IO:', error);
-    console.log('Socket.IO running in single-instance mode');
+    try {
+      const pubClient = createClient({ 
+        url: redisUrl,
+        socket: {
+          reconnectStrategy: (retries) => {
+            if (retries > 10) {
+              console.error('Redis max retry attempts reached');
+              return new Error('Max retry attempts reached');
+            }
+            return Math.min(retries * 100, 3000);
+          }
+        }
+      });
+      const subClient = pubClient.duplicate();
+      
+      await Promise.all([
+        pubClient.connect(),
+        subClient.connect()
+      ]);
+      
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log('🔗 Socket.IO Redis adapter configured for multi-instance support');
+      
+      // Test Redis connection
+      await pubClient.ping();
+      console.log('✅ Redis connection verified');
+    } catch (error) {
+      console.warn('⚠️ Failed to configure Redis adapter for Socket.IO:', error);
+      console.log('🔧 Socket.IO running in single-instance mode');
+    }
   }
   io.use(async (socket: any, next) => {
     try {
@@ -49,6 +79,7 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
       
       if (!sessionId) {
         console.log('Socket auth failed: No session ID found in cookies');
+        console.log('Available cookies:', cookies);
         return next(new Error('Session authentication required'));
       }
 
@@ -86,6 +117,9 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
 
   io.on('connection', (socket: any) => {
     console.log(`User ${socket.user.username} connected`);
+    
+    socket.join(`user_${socket.user.id}`);
+    console.log(`User ${socket.user.username} joined personal notification room`);
 
     socket.on('join_conversation', (conversationId: string) => {
       socket.join(`conversation_${conversationId}`);
@@ -112,7 +146,42 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
           text
         );
 
-        io.to(`conversation_${conversationId}`).emit('message:new', message.toJSON());
+        if (io) {
+          io.to(`conversation_${conversationId}`).emit('message:new', message.toJSON());
+        }
+        
+        const updatedConversation = await ConversationModel.findById(conversationId);
+        if (updatedConversation) {
+          const otherParticipants = updatedConversation.participants.filter(
+            (participantId: any) => participantId.toString() !== socket.user.id
+          );
+          
+          otherParticipants.forEach((participantId: any) => {
+            const participantIdStr = participantId.toString();
+            const unreadCount = updatedConversation.unreadMessages.get(participantIdStr) || 0;
+            
+            const notification: MessageNotification = {
+              senderId: socket.user.id,
+              senderName: socket.user.name,
+              senderUsername: socket.user.username,
+              conversationId: conversationId,
+              messageId: message.id,
+              text: text,
+              timestamp: new Date().toISOString()
+            };
+            
+            if (io) {
+              io.to(`user_${participantIdStr}`).emit('notification:new_message', notification);
+              const unreadUpdate: UnreadCountUpdate = {
+                conversationId: conversationId,
+                unreadCount: unreadCount
+              };
+              io.to(`user_${participantIdStr}`).emit('conversation:unread_update', unreadUpdate);
+            }
+            
+            console.log(`Notification and unread count (${unreadCount}) sent to user ${participantIdStr} for message from ${socket.user.username}`);
+          });
+        }
         
         console.log(`Message sent in conversation ${conversationId} by ${socket.user.username}`);
       } catch (error) {
@@ -145,6 +214,30 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
       }
     });
 
+    socket.on('conversation:mark_as_read', async (data: { conversationId: string }) => {
+      try {
+        const { conversationId } = data;
+        
+        if (!conversationId) {
+          socket.emit('message:error', { error: 'Invalid conversation ID' });
+          return;
+        }
+
+        const result = await MessageService.markConversationMessagesAsRead(conversationId, socket.user.id);
+
+        const unreadUpdate: UnreadCountUpdate = {
+          conversationId: conversationId,
+          unreadCount: 0
+        };
+        socket.emit('conversation:unread_update', unreadUpdate);
+        
+        console.log(`${result.markedCount} messages marked as read in conversation ${conversationId} by ${socket.user.username}`);
+      } catch (error) {
+        console.error('Error marking conversation as read:', error);
+        socket.emit('message:error', { error: 'Failed to mark conversation as read' });
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log(`User ${socket.user.username} disconnected`);
     });
@@ -152,3 +245,6 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
 
   return io;
 };
+
+// Simple function to get socket instance
+export const getSocketInstance = () => io;

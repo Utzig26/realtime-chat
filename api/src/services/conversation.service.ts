@@ -6,6 +6,10 @@ import mongoose from 'mongoose';
 
 export class ConversationService {
   static async createConversation(userId: string, participantId: string): Promise<ConversationResponseDTO> {
+    if (userId === participantId) {
+      throw new ValidationError('Cannot create conversation with yourself');
+    }
+
     const participant = await ConversationModel.db.collection('users').findOne({ _id: new mongoose.Types.ObjectId(participantId) });
     if (!participant) {
       throw new NotFoundError('Participant not found');
@@ -16,13 +20,20 @@ export class ConversationService {
       throw new ConflictError('Conversation already exists');
     }
 
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const participantObjectId = new mongoose.Types.ObjectId(participantId);
+    
+    const participants = [userObjectId, participantObjectId].sort((a, b) => 
+      a.toString().localeCompare(b.toString())
+    );
+
     const conversation = await ConversationModel.create({
-      participants: [new mongoose.Types.ObjectId(userId), new mongoose.Types.ObjectId(participantId)]
+      participants: participants
     });
 
     await conversation.populate('participants', 'name username');
 
-    return new ConversationResponseDTO(conversation);
+    return new ConversationResponseDTO(conversation, userId);
   }
 
   static async getUserConversations(userId: string): Promise<ConversationResponseDTO[]> {
@@ -32,7 +43,7 @@ export class ConversationService {
       .sort({ lastMessageAt: -1, updatedAt: -1 })
       .populate('participants', 'name username');
 
-    return conversations.map((conversation: any) => new ConversationResponseDTO(conversation));
+    return conversations.map((conversation: any) => new ConversationResponseDTO(conversation, userId));
   }
 
   static async getConversationById(conversationId: string, userId: string): Promise<ConversationResponseDTO> {
@@ -40,6 +51,6 @@ export class ConversationService {
     
     await conversation.populate('participants', 'name username');
 
-    return new ConversationResponseDTO(conversation);
+    return new ConversationResponseDTO(conversation, userId);
   }
 }

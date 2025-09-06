@@ -16,6 +16,7 @@ export interface CreateConversationRequest {
 export interface ConversationResponse {
   id: string;
   participants: UserResponse[];
+  unreadCount?: number;
   createdAt: Date;
   updatedAt: Date;
   lastMessageAt?: Date;

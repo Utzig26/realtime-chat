@@ -4,8 +4,9 @@ import { AuthService } from "../services/auth.service";
 import { asyncHandler } from "../middleware";
 import { setSessionCookie, clearSessionCookie } from "../middleware/sessionAuth";
 import { loginSchema } from "../schemas/auth.schema";
-import { AuthError } from '../errors';
 import { AuthenticatedRequest } from '../types/session.types';
+import { UserCacheStrategy } from '../cache';
+import { getSocketInstance } from '../config/socket';
 
 export class AuthController {
 
@@ -20,6 +21,13 @@ export class AuthController {
     if (ipAddress) sessionOptions.ipAddress = ipAddress;
     
     const { user, sessionId } = await AuthService.register(validatedCreateUserSchema, sessionOptions);
+
+    await UserCacheStrategy.invalidateUserCache();
+
+    const socketInstance = getSocketInstance();
+    if (socketInstance) {
+      socketInstance.emit('users:refresh');
+    }
 
     setSessionCookie(res, sessionId);
     res.created({

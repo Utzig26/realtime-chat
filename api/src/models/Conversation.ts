@@ -4,6 +4,7 @@ export interface IConversation extends Document {
   _id: mongoose.Types.ObjectId;
   id: string;
   participants: [mongoose.Types.ObjectId, mongoose.Types.ObjectId];
+  unreadMessages: Map<string, number>;
   createdAt: Date;
   updatedAt: Date;
   lastMessageAt?: Date;
@@ -12,6 +13,8 @@ export interface IConversation extends Document {
 export interface IConversationModel extends mongoose.Model<IConversation> {
   findConversation(userId1: string, userId2: string): Promise<IConversation | null>;
   findUserConversations(userId: string): Promise<IConversation[]>;
+  incrementUnreadCount(conversationId: string, userId: string): Promise<IConversation | null>;
+  resetUnreadCount(conversationId: string, userId: string): Promise<IConversation | null>;
 }
 
 const ConversationSchema = new Schema<IConversation>({
@@ -27,6 +30,11 @@ const ConversationSchema = new Schema<IConversation>({
       },
       message: 'Exactly 2 participants are required'
     }
+  },
+  unreadMessages: {
+    type: Map,
+    of: Number,
+    default: () => new Map()
   },
   createdAt: {
     type: Date,
@@ -54,7 +62,7 @@ const ConversationSchema = new Schema<IConversation>({
 });
 
 ConversationSchema.index({ lastMessageAt: -1 });
-ConversationSchema.index({ participants: 1 }, { unique: true });
+ConversationSchema.index({ participants: 1 });
 
 ConversationSchema.statics.findConversation = function(userId1: string, userId2: string) {
   return this.findOne({
@@ -66,6 +74,26 @@ ConversationSchema.statics.findUserConversations = function(userId: string) {
   return this.find({
     participants: userId
   }).sort({ lastMessageAt: -1, updatedAt: -1 });
+};
+
+ConversationSchema.statics.incrementUnreadCount = function(conversationId: string, userId: string) {
+  return this.findByIdAndUpdate(
+    conversationId,
+    {
+      $inc: { [`unreadMessages.${userId}`]: 1 }
+    },
+    { new: true }
+  );
+};
+
+ConversationSchema.statics.resetUnreadCount = function(conversationId: string, userId: string) {
+  return this.findByIdAndUpdate(
+    conversationId,
+    {
+      $unset: { [`unreadMessages.${userId}`]: 1 }
+    },
+    { new: true }
+  );
 };
 
 ConversationSchema.pre('save', function(next) {

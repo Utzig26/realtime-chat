@@ -56,11 +56,31 @@ export class AuthService {
   }
 
   static async logout(sessionId: string): Promise<void> {
+    const sessionData = await SessionService.validateSession(sessionId);
+    
     await SessionService.deleteSession(sessionId);
+    
+    if (sessionData && sessionData.userId) {
+      await UserModel.findByIdAndUpdate(
+        sessionData.userId,
+        { lastSeen: new Date() },
+        { new: false }
+      ).exec().catch(error => {
+        console.error('Failed to update lastSeen on logout:', error);
+      });
+    }
   }
 
   static async logoutAllSessions(userId: string): Promise<void> {
     await SessionService.deleteAllUserSessions(userId);
+    
+    await UserModel.findByIdAndUpdate(
+      userId,
+      { lastSeen: new Date() },
+      { new: false }
+    ).exec().catch(error => {
+      console.error('Failed to update lastSeen on logout all sessions:', error);
+    });
   }
 
   static async getUserSessions(userId: string): Promise<SessionResponse[]> {

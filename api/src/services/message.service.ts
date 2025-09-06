@@ -21,9 +21,20 @@ export class MessageService {
 
     await message.populate('senderId', 'name username avatarUrl');
 
-    await ConversationModel.findByIdAndUpdate(conversationId, {
-      lastMessageAt: new Date()
-    });
+    const conversation = await ConversationModel.findById(conversationId);
+    if (conversation) {
+      const otherParticipants = conversation.participants.filter(
+        (participantId: any) => participantId.toString() !== senderId
+      );
+      
+      for (const participantId of otherParticipants) {
+        await ConversationModel.incrementUnreadCount(conversationId, participantId.toString());
+      }
+
+      await ConversationModel.findByIdAndUpdate(conversationId, {
+        lastMessageAt: new Date()
+      });
+    }
 
     return new MessageResponseDTO(message);
   }
@@ -73,6 +84,8 @@ export class MessageService {
         }
       }
     );
+
+    await ConversationModel.resetUnreadCount(conversationId, userId);
 
     return { markedCount: result.modifiedCount };
   }

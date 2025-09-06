@@ -9,3 +9,4 @@ export {
   requireAuth, 
   optionalAuth 
 } from './sessionAuth';
+export { updateLastSeen } from './onlineStatus';

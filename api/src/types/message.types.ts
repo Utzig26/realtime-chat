@@ -47,3 +47,18 @@ export interface MessageWithSender extends Message {
 export interface MarkMessagesAsReadResponse {
   markedCount: number;
 }
+
+export interface MessageNotification {
+  senderId: string;
+  senderName: string;
+  senderUsername: string;
+  conversationId: string;
+  messageId: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface UnreadCountUpdate {
+  conversationId: string;
+  unreadCount: number;
+}
