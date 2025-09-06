@@ -12,6 +12,7 @@ import userRoutes from './routes/user.routes';
 import conversationRoutes from './routes/conversation.routes';
 import messageRoutes from './routes/message.routes';
 import { errorHandler, responseHandler } from './middleware';
+import { setupSwagger } from './config/swagger';
 
 const app = express();
 const server = createServer(app);
@@ -37,12 +38,7 @@ export const startServer = async () => {
     app.use(cookieParser());
     app.use(responseHandler);
 
-    route.get('/', (req: Request, res: Response) => {
-      res.success({ 
-        message: 'Realtime Chat API',
-        status: 'running'
-      });
-    });
+    setupSwagger(app);
 
     app.use('/auth', authRoutes);
     app.use('/users', userRoutes);
@@ -52,7 +48,6 @@ export const startServer = async () => {
 
     app.use(errorHandler);
 
-    // Initialize Socket.IO
     await initializeSocket(server);
 
     server.listen(PORT, () => {
@@ -65,7 +60,6 @@ export const startServer = async () => {
   }
 };
 
-// Start server if this file is run directly (not imported by cluster)
 if (require.main === module) {
   startServer();
 }
