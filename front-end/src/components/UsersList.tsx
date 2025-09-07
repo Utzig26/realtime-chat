@@ -1,8 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { useUsersAndConversations, UserWithConversation } from '@/hooks/useUsersAndConversations'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { useConversationStore } from '@/stores/conversation.store'
 import { useAuthStore } from '@/stores/auth.store'
+import { useChat } from '@/hooks/useChat'
+import { UserWithConversation } from '@/hooks/useUsersWithConversations'
 import UserListItem from './UserListItem'
 import { Loading } from './Loading'
 import Swal from 'sweetalert2'
@@ -12,57 +14,70 @@ interface UsersListProps {
 }
 
 export default function UsersList({ onUserSelect }: UsersListProps) {
-  const { users, conversations, loading, error, createConversation } = useUsersAndConversations()
+  const { createConversation } = useConversationStore()
   const { user: currentUser } = useAuthStore()
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const usersListRef = useRef<HTMLDivElement>(null)
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
 
-  const sortedUsersWithConversations = useMemo(() => {
-    if (!currentUser) return []
+  const { usersWithConversations, loading, error, loadMoreUsers, hasNextPage, loadingMore } = useChat({ 
+    currentUserId: currentUser?.id || '' 
+  })
 
-    const conversationMap = new Map<string, UserWithConversation>()
+  const handleScroll = useCallback(() => {
+    const container = usersListRef.current
+    if (!container || !hasNextPage || loadingMore) return
+
+    const { scrollTop, scrollHeight, clientHeight } = container
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
     
-    conversations.forEach(conversation => {
-      const otherParticipant = conversation.participants.find(p => p.id !== currentUser.id)
-      if (otherParticipant) {
-        conversationMap.set(otherParticipant.id, {
-          ...otherParticipant,
-          conversation,
-          unreadCount: conversation.unreadCount || 0
-        })
+    const isNearBottom = distanceFromBottom < 200
+
+    if (isNearBottom) {
+      loadMoreUsers()
+    }
+  }, [hasNextPage, loadingMore, loadMoreUsers])
+
+  useEffect(() => {
+    const container = usersListRef.current
+    if (!container) return
+
+    let timeoutId: NodeJS.Timeout
+    const throttledHandleScroll = () => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(handleScroll, 100)
+    }
+
+    container.addEventListener('scroll', throttledHandleScroll, { passive: true })
+    return () => {
+      container.removeEventListener('scroll', throttledHandleScroll)
+      clearTimeout(timeoutId)
+    }
+  }, [handleScroll])
+
+  useEffect(() => {
+    const trigger = loadMoreTriggerRef.current
+    if (!trigger || !hasNextPage || loadingMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (entry.isIntersecting) {
+          loadMoreUsers()
+        }
+      },
+      {
+        root: usersListRef.current,
+        rootMargin: '100px',
+        threshold: 0.1
       }
-    })
+    )
 
-    const usersWithConversations: UserWithConversation[] = []
-    const usersWithoutConversations: UserWithConversation[] = []
-
-    users.forEach(user => {
-      if (user.id === currentUser.id) return
-
-      if (conversationMap.has(user.id)) {
-        usersWithConversations.push(conversationMap.get(user.id)!)
-      } else {
-        usersWithoutConversations.push(user)
-      }
-    })
-
-    usersWithConversations.sort((a, b) => {
-      const aUpdatedAt = a.conversation?.updatedAt
-      const bUpdatedAt = b.conversation?.updatedAt
-      
-      if (aUpdatedAt && bUpdatedAt) {
-        return new Date(bUpdatedAt).getTime() - new Date(aUpdatedAt).getTime()
-      }
-      if (aUpdatedAt && !bUpdatedAt) return -1
-      if (!aUpdatedAt && bUpdatedAt) return 1
-
-      return a.name.localeCompare(b.name)
-    })
-
-    return [...usersWithConversations, ...usersWithoutConversations]
-  }, [users, conversations, currentUser])
+    observer.observe(trigger)
+    return () => observer.disconnect()
+  }, [hasNextPage, loadingMore, loadMoreUsers])
 
   const handleUserClick = async (user: UserWithConversation) => {
-    // If user already has a conversation, just select them
     if (user.conversation) {
       setSelectedUserId(user.id)
       if (onUserSelect) {
@@ -86,7 +101,12 @@ export default function UsersList({ onUserSelect }: UsersListProps) {
         if (newConversation) {
           setSelectedUserId(user.id)
           if (onUserSelect) {
-            onUserSelect(user)
+            const userWithConversation: UserWithConversation = {
+              ...user,
+              conversation: newConversation,
+              unreadCount: 0
+            }
+            onUserSelect(userWithConversation)
           }
         }
       } catch (error) {
@@ -114,7 +134,7 @@ export default function UsersList({ onUserSelect }: UsersListProps) {
     )
   }
 
-  if (sortedUsersWithConversations.length === 0) {
+  if (usersWithConversations.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center text-gray-500">
@@ -125,9 +145,12 @@ export default function UsersList({ onUserSelect }: UsersListProps) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto">
-        {sortedUsersWithConversations.map((user) => (
+    <div className="flex flex-col h-full min-h-0">
+      <div 
+        ref={usersListRef}
+        className="flex-1 overflow-y-auto min-h-0"
+      >
+        {usersWithConversations.map((user) => (
           <UserListItem
             key={user.id}
             user={user}
@@ -136,6 +159,35 @@ export default function UsersList({ onUserSelect }: UsersListProps) {
             onClick={handleUserClick}
           />
         ))}
+        
+        {loadingMore && (
+          <div className="flex items-center justify-center py-4">
+            <Loading size="sm" />
+            <span className="ml-2 text-sm text-gray-500">Loading more users...</span>
+          </div>
+        )}
+        
+        {hasNextPage && !loadingMore && (
+          <div className="text-center py-4">
+            <button
+              onClick={loadMoreUsers}
+              className="text-sm text-blue-500 hover:text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors"
+            >
+              Carregar mais usuários
+            </button>
+          </div>
+        )}
+        
+        {!hasNextPage && usersWithConversations.length > 0 && (
+          <div className="text-center py-4 text-sm text-gray-500">
+            Não há mais usuários para carregar
+          </div>
+        )}
+        
+        {hasNextPage && (
+          <div ref={loadMoreTriggerRef} className="h-1" />
+        )}
+        
       </div>
     </div>
   )

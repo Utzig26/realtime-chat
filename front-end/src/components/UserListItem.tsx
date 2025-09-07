@@ -1,8 +1,9 @@
 'use client'
 
-import { UserWithConversation } from '@/hooks/useUsersAndConversations'
+import { UserWithConversation } from '@/hooks/useUsersWithConversations'
 import { formatTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { MessageCircle } from 'lucide-react'
 
 interface UserListItemProps {
   user: UserWithConversation
@@ -12,23 +13,13 @@ interface UserListItemProps {
 }
 
 export default function UserListItem({ user, currentUserId, isSelected = false, onClick }: UserListItemProps) {
-  const isCurrentUser = user.id === currentUserId
   const otherUser = user.conversation?.participants.find(p => p.id !== currentUserId)
   const displayUser = otherUser || user
 
-  const getStatusText = () => {
-    if (isCurrentUser) return 'You'
-    if (displayUser.isOnline) return 'Online'
-    if (displayUser.lastSeen) {
-      return `Last seen ${formatTime(displayUser.lastSeen)}`
-    }
-    return 'Offline'
-  }
-
-  const getStatusColor = () => {
-    if (isCurrentUser) return 'text-gray-500'
-    if (displayUser.isOnline) return 'text-green-500'
-    return 'text-gray-400'
+  const getLastMessageText = () => {
+    const lastMessage = user.conversation?.lastMessage 
+    if (!lastMessage) return ''
+    return lastMessage?.senderId === currentUserId? `Você: ${lastMessage.text}` : lastMessage.text
   }
 
   const hasUnreadMessages = (user.unreadCount || 0) > 0
@@ -54,9 +45,6 @@ export default function UserListItem({ user, currentUserId, isSelected = false, 
         <div className={getAvatarClasses()}>
           {displayUser.name.charAt(0).toUpperCase()}
         </div>
-        {displayUser.isOnline && !isCurrentUser && (
-          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-        )}
       </div>
 
       <div className="flex-1 min-w-0 ml-3">
@@ -67,9 +55,7 @@ export default function UserListItem({ user, currentUserId, isSelected = false, 
             </h3>
             {user.conversation && (
               <div className="flex-shrink-0">
-                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                </svg>
+                <MessageCircle className="w-4 h-4 text-gray-400" />
               </div>
             )}
           </div>
@@ -83,9 +69,6 @@ export default function UserListItem({ user, currentUserId, isSelected = false, 
         </div>
         
         <div className="flex items-center justify-between mt-1">
-          <p className="text-sm text-gray-500 truncate">
-            @{displayUser.username}
-          </p>
           {user.conversation?.lastMessageAt && (
             <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
               {formatTime(user.conversation.lastMessageAt)}
@@ -93,8 +76,8 @@ export default function UserListItem({ user, currentUserId, isSelected = false, 
           )}
         </div>
 
-        <p className={cn("text-xs mt-1", getStatusColor())}>
-          {getStatusText()}
+        <p className={"text-xs mt-1 truncate text-gray-500"}>
+          {getLastMessageText()}
         </p>
       </div>
     </div>

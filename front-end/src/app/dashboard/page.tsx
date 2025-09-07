@@ -4,13 +4,16 @@ import PageLayout from '@/components/PageLayout'
 import PageLoader from '@/components/PageLoader'
 import UserInfo from '@/components/UserInfo'
 import UsersList from '@/components/UsersList'
+import MessageChatBox from '@/components/MessageChatBox'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { UserWithConversation } from '@/hooks/useUsersAndConversations'
+import { useAuthStore } from '@/stores/auth.store'
+import { UserWithConversation } from '@/hooks/useUsersWithConversations'
 import { useState } from 'react'
 
 export default function DashboardPage() {
   const { logout } = useAuth()
+  const { user: currentUser } = useAuthStore()
   const router = useRouter()
   const [selectedUser, setSelectedUser] = useState<UserWithConversation | null>(null)
 
@@ -38,23 +41,10 @@ export default function DashboardPage() {
                 <UsersList onUserSelect={handleUserSelect} />
               </div>
 
-              <div className="flex-1 flex flex-col">
-                {selectedUser ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center text-gray-500">
-                      <p>Chat with {selectedUser.name}</p>
-                      <p className="text-sm mt-1">Messages will appear here</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center text-gray-500">
-                      <p>No messages yet</p>
-                      <p className="text-sm mt-1">Start the conversation!</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <MessageChatBox
+                selectedUser={selectedUser}
+                currentUserId={currentUser?.id || ''}
+              />
             </div>
           </div>
         </div>
