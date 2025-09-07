@@ -16,7 +16,7 @@ import cluster from 'cluster';
 import { setupMaster, setupWorker } from '@socket.io/sticky';
 import { setupPrimary, createAdapter } from '@socket.io/cluster-adapter';
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 const numCPUs = require("os").cpus().length;
 const app = express();

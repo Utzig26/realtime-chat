@@ -7,9 +7,7 @@ import { ConversationService, UserService } from '../services';
 
 let io: Server | null = null;
 
-export const initializeSocket = async (httpServer: any): Promise<Server> => {
-  const workerId = process.env.WORKER_ID || 'unknown';
-  
+export const initializeSocket = async (httpServer: any): Promise<Server> => {  
   io = new Server(httpServer, {
     cors: {
       origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000'],

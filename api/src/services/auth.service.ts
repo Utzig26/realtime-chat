@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { UserModel } from "../models";
 import { CreateUserRequest } from "../types/user.types";
-import { AuthResponseDTO } from "../dtos/auth.dto";
 import { ConflictError, AuthError, UserNotFoundError } from '../errors';
 import { LoginRequest } from '../types/auth.types';
 import { SessionService, CreateSessionOptions } from './session.service';
