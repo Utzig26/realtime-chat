@@ -52,14 +52,6 @@ export class MessageService {
     return new MessagesResponseDTO(messages, hasMore, nextCursor);
   }
 
-  static async markMessageAsRead(messageId: string, userId: string): Promise<void> {
-    await MessageModel.findByIdAndUpdate(messageId, {
-      $set: {
-        [`statusMap.${userId}`]: 'read'
-      }
-    });
-  }
-
   static async markConversationMessagesAsRead(conversationId: string, userId: string): Promise<{ markedCount: number }> {
     await ConversationValidator.validateConversationAccess(conversationId, userId);
 

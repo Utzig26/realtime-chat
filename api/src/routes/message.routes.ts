@@ -8,6 +8,5 @@ router.use(sessionAuth);
 router.use(updateLastSeen);
 
 router.get('/:id/messages', MessageController.getMessages);
-router.put('/:conversationId/messages/read', MessageController.markConversationMessagesAsRead);
 
 export default router;
