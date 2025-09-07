@@ -7,8 +7,6 @@ import { useRouter } from 'next/navigation'
 
 interface UserInfoProps {
   onLogout?: () => void
-  showLogoutButton?: boolean
-  showOnlineStatus?: boolean
 }
 
 export default function UserInfo({ 
