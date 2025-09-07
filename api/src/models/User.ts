@@ -64,7 +64,6 @@ const UserSchema = new Schema<IUser>({
   toJSON: {
     transform: function(_doc, ret) {
       const {  id, _id, ...userWithoutId } = ret;
-      console.log(userWithoutId);
       return {
         id: _id.toString(),
         ...userWithoutId
@@ -73,7 +72,6 @@ const UserSchema = new Schema<IUser>({
   }
 });
 
-UserSchema.index({ username: 1 });
 UserSchema.index({ lastSeen: -1 });
 
 UserSchema.virtual('isOnline').get(function() {

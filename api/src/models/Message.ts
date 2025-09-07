@@ -22,8 +22,7 @@ const MessageSchema = new Schema<IMessage>({
   conversationId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Conversation',
-    required: [true, 'Conversation ID is required'],
-    index: true
+    required: [true, 'Conversation ID is required']
   },
   senderId: {
     type: mongoose.Schema.Types.ObjectId,
