@@ -6,7 +6,7 @@ import { LoginRequest } from '../types/auth.types';
 import { SessionService, CreateSessionOptions } from './session.service';
 import { SessionResponse } from '../types/session.types';
 
-const SALT_ROUNDS = process.env.SALT_ROUNDS || 10;
+const SALT_ROUNDS = process.env.SALT_ROUNDS? parseInt(process.env.SALT_ROUNDS, 10) : 10;
 
 export class AuthService {
   static async register(
