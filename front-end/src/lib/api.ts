@@ -12,7 +12,7 @@ class ApiError extends Error {
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 1000,
+  timeout: 3000,
   withCredentials: true, 
   headers: {
     'Content-Type': 'application/json',
@@ -36,9 +36,27 @@ axiosInstance.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response) {
       const status = error.response.status
-      const errorData = error.response.data as { error?: string; message?: string }
-      const message = errorData?.error || errorData?.message || error.message || 'Request failed'
-      throw new ApiError(status, message)
+      const errorData = error.response.data as { 
+        error?: string | { message?: string; details?: Array<{field: string; message: string}> }; 
+        message?: string 
+      }
+      
+      let message = 'Request failed'
+      
+      if (errorData?.error && typeof errorData.error === 'object') {
+        const errorObj = errorData.error as { message?: string; details?: Array<{field: string; message: string}> }
+        // Pass the full error object as the message
+        throw new ApiError(status, JSON.stringify(errorObj))
+      } else if (typeof errorData?.error === 'string') {
+        message = errorData.error
+        throw new ApiError(status, message)
+      } else if (errorData?.message) {
+        message = errorData.message
+        throw new ApiError(status, message)
+      } else {
+        message = error.message || 'Request failed'
+        throw new ApiError(status, message)
+      }
     } else if (error.request) {
       throw new ApiError(0, 'Network error - no response received')
     } else {
