@@ -15,15 +15,13 @@ class SocketManager {
 
   connect(): Socket {
     if (!this.socket) {
-      console.log('Creating new socket connection...');
       this.socket = io(process.env.NEXT_PUBLIC_API_URL!, {
         withCredentials: true,
-        autoConnect: false
+        transports: ['websocket']
       });
     }
 
     if (!this.socket.connected) {
-      console.log('Connecting socket...');
       this.socket.connect();
     }
 
@@ -51,7 +49,6 @@ class SocketManager {
         this.socket.disconnect();
       }
       this.socket = null;
-      console.log('Socket destroyed');
     }
   }
 }
