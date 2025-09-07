@@ -5,8 +5,6 @@ interface MessageState {
   messages: Map<string, Message[]>
   loading: boolean
   error: string | null
-
-  // Actions
   setMessages: (conversationId: string, messages: Message[]) => void
   addMessage: (conversationId: string, message: Message) => void
   prependMessages: (conversationId: string, messages: Message[]) => void
@@ -35,7 +33,6 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       const newMessages = new Map(state.messages)
       const existingMessages = newMessages.get(conversationId) || []
       
-      // Evitar duplicatas
       const exists = existingMessages.some(m => m.id === message.id)
       if (exists) return state
       

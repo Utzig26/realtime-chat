@@ -8,7 +8,7 @@ export const useAuth = () => {
     if (!authStore.hasCheckedAuth) {
       authStore.checkAuth()
     }
-  }, [authStore.hasCheckedAuth, authStore.checkAuth])
+  }, [authStore.hasCheckedAuth, authStore.checkAuth, authStore])
 
   return authStore
 }

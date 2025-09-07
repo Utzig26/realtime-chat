@@ -35,7 +35,6 @@ export default function UserInfo({
     return null
   }
 
-  // Generate initials from user name
   const getInitials = (name: string) => {
     return name
       .split(' ')

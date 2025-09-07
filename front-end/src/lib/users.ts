@@ -15,40 +15,35 @@ export interface UpdateProfileRequest {
 
 export const getUsers = async (params: GetUsersParams = {}): Promise<PaginatedResponse<User>> => {
   const { page = 1, limit = 10, search } = params
-  const response = await api.get<ApiResponse<{ users: User[], pagination: PaginationMeta }>>('/users', {
-    params: { page, limit, search }
+  const queryParams = new URLSearchParams({ 
+    page: page.toString(), 
+    limit: limit.toString(),
+    ...(search && { search })
   })
+  const response = await api.get<{ users: User[], pagination: PaginationMeta }>(`/users?${queryParams}`)
   
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Failed to fetch users')
+  if (!response.users || !response.pagination) {
+    throw new Error('Failed to fetch users')
   }
 
   return {
-    items: response.data.data.users,
-    pagination: response.data.data.pagination
+    items: response.users,
+    pagination: response.pagination
   }
 }
 
 export const getCurrentUser = async (): Promise<User> => {
-  const response = await api.get<ApiResponse<User>>('/users/me')
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Failed to fetch current user')
+  const response = await api.get<User>('/users/me')
+  if (!response) {
+    throw new Error('Failed to fetch current user')
   }
-  return response.data.data
+  return response
 }
 
 export const getUserById = async (id: string): Promise<User> => {
-  const response = await api.get<ApiResponse<User>>(`/users/${id}`)
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Failed to fetch user')
+  const response = await api.get<User>(`/users/${id}`)
+  if (!response) {
+    throw new Error('Failed to fetch user')
   }
-  return response.data.data
-}
-
-export const updateProfile = async (data: UpdateProfileRequest): Promise<User> => {
-  const response = await api.put<ApiResponse<User>>('/users/me', data)
-  if (!response.data.success || !response.data.data) {
-    throw new Error(response.data.error || 'Failed to update profile')
-  }
-  return response.data.data
+  return response
 }

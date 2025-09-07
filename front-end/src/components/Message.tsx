@@ -23,7 +23,6 @@ export default function Message({
       "flex gap-3 mb-4",
       isOwn ? "flex-row-reverse" : "flex-row"
     )}>
-      {/* Avatar */}
       {showAvatar && !isOwn && (
         <div className="flex-shrink-0">
           <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
@@ -32,12 +31,10 @@ export default function Message({
         </div>
       )}
 
-      {/* Message Content */}
       <div className={cn(
         "flex flex-col max-w-[70%] min-w-0",
         isOwn ? "items-end" : "items-start"
       )}>
-        {/* Message Bubble */}
         <div className={cn(
           "px-4 py-2 rounded-2xl break-words overflow-hidden",
           isOwn 
@@ -47,7 +44,6 @@ export default function Message({
           <p className="text-sm leading-relaxed break-all hyphens-auto">{message.text}</p>
         </div>
 
-        {/* Time */}
         {showTime && (
           <div className={cn(
             "flex items-center gap-1 mt-1 text-xs text-gray-500",
