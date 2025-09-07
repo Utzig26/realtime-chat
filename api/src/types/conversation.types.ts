@@ -32,17 +32,6 @@ export interface ConversationWithLastMessage extends ConversationResponse {
   };
 }
 
-export interface GetConversationMessagesRequest {
-  conversationId: string;
-  limit?: number;
-  before?: string;
-}
-
-export interface ConversationMessagesResponse {
-  messages: MessageResponse[];
-  hasMore: boolean;
-  nextCursor?: string;
-}
 
 
 export interface CreateMessageRequest {

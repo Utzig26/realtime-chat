@@ -23,11 +23,6 @@ export interface MessageResponse {
   statusMap?: Record<string, 'sent' | 'delivered' | 'read'> | undefined;
 }
 
-export interface GetMessagesRequest {
-  conversationId: string;
-  limit?: number;
-  before?: string;
-}
 
 export interface MessagesResponse {
   messages: MessageResponse[];
@@ -35,18 +30,6 @@ export interface MessagesResponse {
   nextCursor?: string;
 }
 
-export interface MessageWithSender extends Message {
-  sender: {
-    id: string;
-    name: string;
-    username: string;
-    avatarUrl?: string;
-  };
-}
-
-export interface MarkMessagesAsReadResponse {
-  markedCount: number;
-}
 
 export interface MessageNotification {
   senderId: string;
@@ -63,7 +46,3 @@ export interface UnreadCountUpdate {
   unreadCount: number;
 }
 
-export interface ConversationNotification {
-  conversationId: string;
-  timestamp: string;
-}

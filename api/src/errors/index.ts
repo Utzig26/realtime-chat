@@ -5,7 +5,5 @@ export { NotFoundError } from './NotFoundError';
 export { ConflictError } from './ConflictError';
 export { 
   UserNotFoundError, 
-  UserAlreadyExistsError, 
-  InvalidUserDataError, 
-  UserUpdateError 
+  InvalidUserDataError
 } from './UserError';

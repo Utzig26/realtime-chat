@@ -40,20 +40,6 @@ export class UserResponseDTO implements UserResponse {
   }
 }
 
-// DTO for user list responses
-export class UserListResponseDTO {
-  users: UserResponseDTO[];
-
-  constructor(users: any[]) {
-    this.users = users.map(user => new UserResponseDTO(user));
-  }
-
-  toJSON() {
-    return {
-      users: this.users.map(user => user.toJSON())
-    };
-  }
-}
 
 // DTO for paginated user list responses
 export class PaginatedUserListResponseDTO {

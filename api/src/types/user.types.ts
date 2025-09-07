@@ -24,14 +24,6 @@ export interface UserResponse {
   isOnline: boolean;
 }
 
-export interface UpdateUserRequest {
-  name?: string | undefined;
-  avatarUrl?: string | undefined;
-}
-
-export interface GetUsersByActivityRequest {
-  online?: boolean;
-}
 
 export interface PaginationParams {
   page?: number;

@@ -66,18 +66,3 @@ export class ConversationWithLastMessageDTO extends ConversationResponseDTO impl
   }
 }
 
-export class ConversationListResponseDTO {
-  conversations: ConversationWithLastMessageDTO[];
-
-  constructor(conversations: any[], userId?: string) {
-    this.conversations = conversations.map(conversation => 
-      new ConversationWithLastMessageDTO(conversation, userId)
-    );
-  }
-
-  toJSON() {
-    return {
-      conversations: this.conversations.map(conversation => conversation.toJSON())
-    };
-  }
-}
