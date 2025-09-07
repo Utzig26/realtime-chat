@@ -7,7 +7,7 @@ Aplicação de chat em tempo real com WebSockets, autenticação e clustering.
 ```bash
 git clone git@github.com:Utzig26/realtime-chat.git
 cd realtime-chat
-docker-compose -f docker-compose.yml up -d
+docker-compose up -d
 ```
 
 **Acesse:** http://localhost:5000
