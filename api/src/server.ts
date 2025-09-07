@@ -38,10 +38,18 @@ async function buildApp() {
 
     setupSwagger(app);
 
+    app.get('/', (req, res) => {
+      res.json({ 
+        message: 'Ok!', 
+        status: 'healthy',
+        timestamp: new Date().toISOString()
+      });
+    });
+
     app.use('/auth', authRoutes);
     app.use('/users', userRoutes);
     app.use('/conversations', conversationRoutes);
-    app.use('/', messageRoutes);
+    app.use('/conversations', messageRoutes);
 
     app.use(errorHandler);
 

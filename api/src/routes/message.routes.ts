@@ -7,7 +7,7 @@ const router = Router();
 router.use(sessionAuth);
 router.use(updateLastSeen);
 
-router.get('/conversations/:id/messages', MessageController.getMessages);
-router.put('/conversations/:conversationId/messages/read', MessageController.markConversationMessagesAsRead);
+router.get('/:id/messages', MessageController.getMessages);
+router.put('/:conversationId/messages/read', MessageController.markConversationMessagesAsRead);
 
 export default router;
