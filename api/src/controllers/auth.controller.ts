@@ -64,25 +64,9 @@ export class AuthController {
     }, 'Login successful');
   });
 
-  static extendSession = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    await AuthService.extendSession(req.sessionId);
-    res.success({}, 'Session extended successfully');
-  });
-
   static logout = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     await AuthService.logout(req.sessionId);
     clearSessionCookie(res);
     res.success({}, 'Logged out successfully');
-  });
-
-  static logoutAllSessions = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    await AuthService.logoutAllSessions(req.user._id.toString());
-    clearSessionCookie(res);
-    res.success({}, 'All sessions logged out successfully');
-  });
-
-  static getUserSessions = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const sessions = await AuthService.getUserSessions(req.user._id.toString());
-    res.success({ sessions }, 'User sessions retrieved successfully');
   });
 }

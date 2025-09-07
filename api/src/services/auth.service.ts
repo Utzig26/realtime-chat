@@ -70,39 +70,6 @@ export class AuthService {
     }
   }
 
-  static async logoutAllSessions(userId: string): Promise<void> {
-    await SessionService.deleteAllUserSessions(userId);
-    
-    await UserModel.findByIdAndUpdate(
-      userId,
-      { lastSeen: new Date() },
-      { new: false }
-    ).exec().catch(error => {
-      console.error('Failed to update lastSeen on logout all sessions:', error);
-    });
-  }
-
-  static async getUserSessions(userId: string): Promise<SessionResponse[]> {
-    const sessions = await SessionService.getUserSessions(userId);
-    
-    return sessions.map(session => ({
-      sessionId: '', 
-      user: {
-        id: session.userId,
-        username: session.username,
-        name: session.name
-      },
-      createdAt: session.createdAt,
-      lastActivity: session.lastActivity
-    }));
-  }
-
-  static async extendSession(sessionId: string): Promise<void> {
-    await SessionService.extendSession(sessionId);
-  }
-
-  // private methods
-  
   private static async hashPassword(password: string): Promise<string> {
     return await bcrypt.hash(password, SALT_ROUNDS);
   }
