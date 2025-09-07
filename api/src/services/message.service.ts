@@ -1,7 +1,6 @@
 import { MessageModel } from '../models';
 import { ConversationModel } from '../models';
 import { MessageResponseDTO, MessagesResponseDTO } from '../dtos/message.dto';
-import { NotFoundError, ValidationError } from '../errors';
 import { ConversationValidator } from './conversation-validator.service';
 import mongoose from 'mongoose';
 
@@ -21,20 +20,14 @@ export class MessageService {
 
     await message.populate('senderId', 'name username avatarUrl');
 
-    const conversation = await ConversationModel.findById(conversationId);
-    if (conversation) {
-      const otherParticipants = conversation.participants.filter(
-        (participantId: any) => participantId.toString() !== senderId
-      );
-      
-      for (const participantId of otherParticipants) {
-        await ConversationModel.incrementUnreadCount(conversationId, participantId.toString());
-      }
-
-      await ConversationModel.findByIdAndUpdate(conversationId, {
-        lastMessageAt: new Date()
-      });
-    }
+    const populatedMessage = message as any;
+    await ConversationModel.updateLastMessage(conversationId, {
+      _id: populatedMessage._id,
+      text: populatedMessage.text,
+      senderId: populatedMessage.senderId._id,
+      senderName: populatedMessage.senderId.name,
+      createdAt: populatedMessage.createdAt
+    });
 
     return new MessageResponseDTO(message);
   }

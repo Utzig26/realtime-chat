@@ -8,6 +8,13 @@ export interface IConversation extends Document {
   createdAt: Date;
   updatedAt: Date;
   lastMessageAt?: Date;
+  lastMessage?: {
+    _id: mongoose.Types.ObjectId;
+    text: string;
+    senderId: mongoose.Types.ObjectId;
+    senderName: string;
+    createdAt: Date;
+  };
 }
 
 export interface IConversationModel extends mongoose.Model<IConversation> {
@@ -15,6 +22,13 @@ export interface IConversationModel extends mongoose.Model<IConversation> {
   findUserConversations(userId: string): Promise<IConversation[]>;
   incrementUnreadCount(conversationId: string, userId: string): Promise<IConversation | null>;
   resetUnreadCount(conversationId: string, userId: string): Promise<IConversation | null>;
+  updateLastMessage(conversationId: string, messageData: {
+    _id: mongoose.Types.ObjectId;
+    text: string;
+    senderId: mongoose.Types.ObjectId;
+    senderName: string;
+    createdAt: Date;
+  }): Promise<IConversation | null>;
 }
 
 const ConversationSchema = new Schema<IConversation>({
@@ -40,16 +54,31 @@ const ConversationSchema = new Schema<IConversation>({
     type: Date,
     default: Date.now
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  },
   lastMessageAt: {
     type: Date,
     default: null
+  },
+  lastMessage: {
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message'
+    },
+    text: {
+      type: String,
+    },
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    senderName: {
+      type: String
+    },
+    createdAt: {
+      type: Date
+    }
   }
 }, {
-  timestamps: false,
+  timestamps: true,
   toJSON: {
     transform: function(_doc, ret) {
       const { _id, id, ...conversationWithoutId } = ret;
@@ -80,6 +109,7 @@ ConversationSchema.statics.incrementUnreadCount = function(conversationId: strin
   return this.findByIdAndUpdate(
     conversationId,
     {
+      lastMessageAt: new Date(),
       $inc: { [`unreadMessages.${userId}`]: 1 }
     },
     { new: true }
@@ -91,6 +121,23 @@ ConversationSchema.statics.resetUnreadCount = function(conversationId: string, u
     conversationId,
     {
       $unset: { [`unreadMessages.${userId}`]: 1 }
+    },
+    { new: true }
+  );
+};
+
+ConversationSchema.statics.updateLastMessage = function(conversationId: string, messageData: {
+  _id: mongoose.Types.ObjectId;
+  text: string;
+  senderId: mongoose.Types.ObjectId;
+  senderName: string;
+  createdAt: Date;
+}) {
+  return this.findByIdAndUpdate(
+    conversationId,
+    {
+      lastMessageAt: messageData.createdAt,
+      lastMessage: messageData
     },
     { new: true }
   );

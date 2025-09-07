@@ -1,7 +1,9 @@
 import { ConversationModel } from '../models';
-import { ConversationResponseDTO } from '../dtos/conversation.dto';
+import { ConversationResponseDTO, ConversationWithLastMessageDTO } from '../dtos/conversation.dto';
 import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import { ConversationValidator } from './conversation-validator.service';
+import { getSocketInstance } from '../config/socket';
+import { ConversationNotification } from '../types/message.types';
 import mongoose from 'mongoose';
 
 export class ConversationService {
@@ -33,17 +35,34 @@ export class ConversationService {
 
     await conversation.populate('participants', 'name username');
 
+    const io = getSocketInstance();
+    if (io) {
+      const notification: ConversationNotification = {
+        conversationId: conversation._id.toString(),
+        timestamp: new Date().toISOString()
+      };
+
+      io.to(`user_${participantId}`).emit('notification:new_conversation', notification);
+    }
+
     return new ConversationResponseDTO(conversation, userId);
   }
+  
+  static async updateLastMessageAt(conversationId: string, recipientUserId: string): Promise<void> {
+    const conversation = await ConversationModel.incrementUnreadCount(conversationId, recipientUserId);
+    if (!conversation) {
+      throw new NotFoundError('Conversation not found');
+    }
+  }
 
-  static async getUserConversations(userId: string): Promise<ConversationResponseDTO[]> {
+  static async getUserConversations(userId: string): Promise<ConversationWithLastMessageDTO[]> {
     const conversations = await ConversationModel.find({
       participants: userId
     })
       .sort({ lastMessageAt: -1, updatedAt: -1 })
       .populate('participants', 'name username');
 
-    return conversations.map((conversation: any) => new ConversationResponseDTO(conversation, userId));
+    return conversations.map((conversation: any) => new ConversationWithLastMessageDTO(conversation, userId));
   }
 
   static async getConversationById(conversationId: string, userId: string): Promise<ConversationResponseDTO> {

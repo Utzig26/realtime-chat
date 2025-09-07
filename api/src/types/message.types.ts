@@ -62,3 +62,8 @@ export interface UnreadCountUpdate {
   conversationId: string;
   unreadCount: number;
 }
+
+export interface ConversationNotification {
+  conversationId: string;
+  timestamp: string;
+}
