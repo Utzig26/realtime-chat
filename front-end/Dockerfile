@@ -30,7 +30,7 @@ CMD ["npm", "run", "dev"]
 FROM base AS production
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -47,8 +47,8 @@ USER nextjs
 
 EXPOSE 5000
 
-ENV PORT 5000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=5000
+ENV HOSTNAME="0.0.0.0"
 
 # Health check
 HEALTHCHECK --interval=1s --timeout=3s --start-period=5s --retries=3 \
