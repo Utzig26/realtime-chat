@@ -21,25 +21,25 @@
  *             type: object
  *             required:
  *               - username
- *               - email
  *               - password
+ *               - name
  *             properties:
  *               username:
  *                 type: string
- *                 minLength: 1
+ *                 minLength: 3
  *                 maxLength: 30
+ *                 pattern: '^[a-zA-Z0-9_]+$'
  *                 example: johndoe
- *               email:
- *                 type: string
- *                 format: email
- *                 example: john@example.com
  *               password:
  *                 type: string
- *                 minLength: 1
+ *                 minLength: 6
  *                 maxLength: 100
  *                 example: securePassword123
  *               name:
  *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 100
+ *                 pattern: '^[a-zA-Z\\s]*$'
  *                 example: John Doe
  *     responses:
  *       201:
@@ -55,20 +55,7 @@
  *                       type: object
  *                       properties:
  *                         user:
- *                           type: object
- *                           properties:
- *                             id:
- *                               type: string
- *                               example: 507f1f77bcf86cd799439011
- *                             username:
- *                               type: string
- *                               example: johndoe
- *                             name:
- *                               type: string
- *                               example: John Doe
- *                             createdAt:
- *                               type: string
- *                               format: date-time
+ *                           $ref: '#/components/schemas/User'
  *       400:
  *         description: Validation error or user already exists
  *         content:
@@ -124,23 +111,7 @@
  *                       type: object
  *                       properties:
  *                         user:
- *                           type: object
- *                           properties:
- *                             id:
- *                               type: string
- *                               example: 507f1f77bcf86cd799439011
- *                             username:
- *                               type: string
- *                               example: johndoe
- *                             name:
- *                               type: string
- *                               example: John Doe
- *                             lastSeen:
- *                               type: string
- *                               format: date-time
- *                             createdAt:
- *                               type: string
- *                               format: date-time
+ *                           $ref: '#/components/schemas/User'
  *       400:
  *         description: Invalid credentials or validation error
  *         content:
@@ -149,35 +120,6 @@
  *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Authentication failed
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-
-/**
- * @swagger
- * /auth/extend-session:
- *   post:
- *     summary: Extend current session
- *     tags: [Authentication]
- *     security:
- *       - sessionAuth: []
- *     responses:
- *       200:
- *         description: Session extended successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Success'
- *       401:
- *         description: Unauthorized - invalid or expired session
  *         content:
  *           application/json:
  *             schema:
@@ -205,74 +147,6 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Success'
- *       401:
- *         description: Unauthorized - invalid or expired session
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-
-/**
- * @swagger
- * /auth/logout-all:
- *   post:
- *     summary: Logout all user sessions
- *     tags: [Authentication]
- *     security:
- *       - sessionAuth: []
- *     responses:
- *       200:
- *         description: All sessions logged out successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Success'
- *       401:
- *         description: Unauthorized - invalid or expired session
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-
-/**
- * @swagger
- * /auth/sessions:
- *   get:
- *     summary: Get all user sessions
- *     tags: [Authentication]
- *     security:
- *       - sessionAuth: []
- *     responses:
- *       200:
- *         description: User sessions retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Success'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         sessions:
- *                           type: array
- *                           items:
- *                             $ref: '#/components/schemas/Session'
  *       401:
  *         description: Unauthorized - invalid or expired session
  *         content:

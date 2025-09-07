@@ -74,25 +74,32 @@ const options: swaggerJsdoc.Options = {
         User: {
           type: 'object',
           properties: {
-            _id: {
+            id: {
               type: 'string',
               example: '507f1f77bcf86cd799439011'
+            },
+            name: {
+              type: 'string',
+              example: 'John Doe'
             },
             username: {
               type: 'string',
               example: 'johndoe'
             },
-            email: {
-              type: 'string',
-              format: 'email',
-              example: 'john@example.com'
-            },
-            createdAt: {
+            lastSeen: {
               type: 'string',
               format: 'date-time',
               example: '2023-01-01T00:00:00.000Z'
             },
-            updatedAt: {
+            avatarUrl: {
+              type: 'string',
+              example: 'https://example.com/avatar.jpg'
+            },
+            isOnline: {
+              type: 'boolean',
+              example: true
+            },
+            createdAt: {
               type: 'string',
               format: 'date-time',
               example: '2023-01-01T00:00:00.000Z'
@@ -102,23 +109,52 @@ const options: swaggerJsdoc.Options = {
         Conversation: {
           type: 'object',
           properties: {
-            _id: {
+            id: {
               type: 'string',
               example: '507f1f77bcf86cd799439011'
-            },
-            name: {
-              type: 'string',
-              example: 'General Chat'
-            },
-            type: {
-              type: 'string',
-              enum: ['direct', 'group'],
-              example: 'group'
             },
             participants: {
               type: 'array',
               items: {
                 $ref: '#/components/schemas/User'
+              }
+            },
+            unreadMessages: {
+              type: 'object',
+              additionalProperties: {
+                type: 'number'
+              },
+              example: { '507f1f77bcf86cd799439011': 3 }
+            },
+            lastMessageAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2023-01-01T00:00:00.000Z'
+            },
+            lastMessage: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  example: '507f1f77bcf86cd799439011'
+                },
+                text: {
+                  type: 'string',
+                  example: 'Hello, how are you?'
+                },
+                senderId: {
+                  type: 'string',
+                  example: '507f1f77bcf86cd799439011'
+                },
+                senderName: {
+                  type: 'string',
+                  example: 'John Doe'
+                },
+                createdAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  example: '2023-01-01T00:00:00.000Z'
+                }
               }
             },
             createdAt: {
@@ -136,25 +172,46 @@ const options: swaggerJsdoc.Options = {
         Message: {
           type: 'object',
           properties: {
-            _id: {
+            id: {
               type: 'string',
               example: '507f1f77bcf86cd799439011'
             },
-            content: {
+            conversationId: {
+              type: 'string',
+              example: '507f1f77bcf86cd799439011'
+            },
+            senderId: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  example: '507f1f77bcf86cd799439011'
+                },
+                name: {
+                  type: 'string',
+                  example: 'John Doe'
+                },
+                username: {
+                  type: 'string',
+                  example: 'johndoe'
+                },
+                avatarUrl: {
+                  type: 'string',
+                  example: 'https://example.com/avatar.jpg'
+                }
+              }
+            },
+            text: {
               type: 'string',
               example: 'Hello, how are you?'
             },
-            sender: {
-              $ref: '#/components/schemas/User'
-            },
-            conversation: {
-              type: 'string',
-              example: '507f1f77bcf86cd799439011'
-            },
-            type: {
-              type: 'string',
-              enum: ['text', 'image', 'file'],
-              example: 'text'
+            statusMap: {
+              type: 'object',
+              additionalProperties: {
+                type: 'string',
+                enum: ['sent', 'delivered', 'read']
+              },
+              example: { '507f1f77bcf86cd799439011': 'read' }
             },
             createdAt: {
               type: 'string',
@@ -163,41 +220,6 @@ const options: swaggerJsdoc.Options = {
             }
           }
         },
-        Session: {
-          type: 'object',
-          properties: {
-            _id: {
-              type: 'string',
-              example: '507f1f77bcf86cd799439011'
-            },
-            user: {
-              type: 'string',
-              example: '507f1f77bcf86cd799439011'
-            },
-            ipAddress: {
-              type: 'string',
-              example: '192.168.1.1'
-            },
-            userAgent: {
-              type: 'string',
-              example: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            },
-            isActive: {
-              type: 'boolean',
-              example: true
-            },
-            lastActivity: {
-              type: 'string',
-              format: 'date-time',
-              example: '2023-01-01T00:00:00.000Z'
-            },
-            createdAt: {
-              type: 'string',
-              format: 'date-time',
-              example: '2023-01-01T00:00:00.000Z'
-            }
-          }
-        }
       }
     },
     security: [

@@ -21,26 +21,13 @@
  *           schema:
  *             type: object
  *             required:
- *               - name
- *               - type
- *               - participants
+ *               - participantId
  *             properties:
- *               name:
+ *               participantId:
  *                 type: string
- *                 minLength: 1
- *                 maxLength: 100
- *                 example: General Chat
- *               type:
- *                 type: string
- *                 enum: [direct, group]
- *                 example: group
- *               participants:
- *                 type: array
- *                 items:
- *                   type: string
- *                   pattern: '^[0-9a-fA-F]{24}$'
- *                 minItems: 1
- *                 example: ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
+ *                 pattern: '^[0-9a-fA-F]{24}$'
+ *                 example: 507f1f77bcf86cd799439011
+ *                 description: ID of the user to start a conversation with
  *     responses:
  *       201:
  *         description: Conversation created successfully

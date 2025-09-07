@@ -36,7 +36,9 @@ async function buildApp() {
     app.use(cookieParser());
     app.use(responseHandler);
 
-    setupSwagger(app);
+    if (process.env.NODE_ENV !== 'production') {
+        setupSwagger(app);
+    }
 
     app.get('/', (req, res) => {
       res.json({ 
