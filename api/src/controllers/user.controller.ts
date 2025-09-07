@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
 import { asyncHandler } from '../middleware';
-import { updateUserSchema, getUserByIdSchema, getUsersWithPaginationSchema } from '../schemas/user.schema';
+import { getUserByIdSchema, getUsersWithPaginationSchema } from '../schemas/user.schema';
 import { User } from '../types/user.types';
 
 export class UserController {
@@ -26,12 +26,4 @@ export class UserController {
     res.success(userDTO.toJSON(), 'User retrieved successfully');
   });
 
-  static updateProfile = asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req.user as User).id.toString();
-    const validatedUpdateData = updateUserSchema.parse(req.body);
-
-    const userDTO = await UserService.updateUser(userId, validatedUpdateData);
-
-    res.success(userDTO.toJSON(), 'Profile updated successfully');
-  });
 }

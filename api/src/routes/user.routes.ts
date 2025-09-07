@@ -10,7 +10,5 @@ router.use(updateLastSeen);
 
 router.get('/', UserCacheStrategy.userList(), UserController.getUsers);
 router.get('/me', UserCacheStrategy.currentUser(), UserController.getProfile);
-router.get('/:id', UserCacheStrategy.userById(), UserController.getUserById);
-router.put('/me', UserCacheStrategy.invalidateUser(), UserController.updateProfile);
 
 export default router;

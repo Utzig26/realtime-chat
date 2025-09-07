@@ -1,7 +1,7 @@
 import { UserModel } from '../models';
 import { UserNotFoundError, InvalidUserDataError } from '../errors';
-import { UpdateUserRequest, GetUsersByActivityRequest, PaginationParams } from '../types/user.types';
-import { UserResponseDTO, UserListResponseDTO, PaginatedUserListResponseDTO } from '../dtos/user.dto';
+import { PaginationParams } from '../types/user.types';
+import { UserResponseDTO, PaginatedUserListResponseDTO } from '../dtos/user.dto';
 
 export class UserService {
 
@@ -57,25 +57,5 @@ export class UserService {
     }
 
     return new UserResponseDTO(user);
-  }
-
-  static async updateUser(userId: string, updateData: UpdateUserRequest): Promise<UserResponseDTO> {
-    const user = await UserModel.findByIdAndUpdate(
-      userId,
-      updateData,
-      { new: true, runValidators: true }
-    );
-
-    if (!user) {
-      throw new UserNotFoundError('User not found');
-    }
-
-    return new UserResponseDTO(user);
-  }
-
-
-  static async userExists(userId: string): Promise<boolean> {
-    const user = await UserModel.findById(userId);
-    return user !== null;
   }
 }

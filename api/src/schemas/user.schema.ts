@@ -18,18 +18,6 @@ export const createUserSchema: z.ZodType<CreateUserRequest> = z.object({
     .max(100, 'Password cannot exceed 100 characters')
 });
 
-export const updateUserSchema = z.object({
-  name: z.string()
-    .min(1, 'Name is required')
-    .max(100, 'Name cannot exceed 100 characters')
-    .regex(/^[a-zA-Z\s]*$/, 'Name can only contain letters and spaces')
-    .trim()
-    .optional(),
-  avatarUrl: z.string()
-    .url('Avatar URL must be a valid URL')
-    .optional()
-});
-
 export const getUserByIdSchema = z.object({
   id: z.string()
     .min(1, 'User ID is required')

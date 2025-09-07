@@ -3,7 +3,6 @@ import { ConversationResponseDTO, ConversationWithLastMessageDTO } from '../dtos
 import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import { ConversationValidator } from './conversation-validator.service';
 import { getSocketInstance } from '../config/socket';
-import { ConversationNotification } from '../types/message.types';
 import mongoose from 'mongoose';
 
 export class ConversationService {
@@ -37,7 +36,7 @@ export class ConversationService {
 
     const io = getSocketInstance();
     if (io) {
-      const notification: ConversationNotification = {
+      const notification = {
         conversationId: conversation._id.toString(),
         timestamp: new Date().toISOString()
       };
