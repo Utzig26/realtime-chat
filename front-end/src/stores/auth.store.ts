@@ -33,16 +33,16 @@ export const useAuthStore = create<AuthState>()(
     try {
       const response = await api.post<ApiResponse<{ user: User }>>('/auth/login', credentials)
       
-      if (response.data.success && response.data.data) {
+      if (response.success && response.data) {
         set({
-          user: response.data.data.user,
+          user: response.data.user,
           isAuthenticated: true,
           isLoading: false,
           error: null,
           hasCheckedAuth: true
         })
       } else {
-        throw new Error(response.data.message || 'Login failed')
+        throw new Error(response.message || 'Login failed')
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed'
@@ -62,16 +62,16 @@ export const useAuthStore = create<AuthState>()(
     try {
       const response = await api.post<ApiResponse<{ user: User }>>('/auth/register', userData)
       
-      if (response.data.success && response.data.data) {
+      if (response.success && response.data) {
         set({
-          user: response.data.data.user,
+          user: response.data.user,
           isAuthenticated: true,
           isLoading: false,
           error: null,
           hasCheckedAuth: true
         })
       } else {
-        throw new Error(response.data.message || 'Registration failed')
+        throw new Error(response.message || 'Registration failed')
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed'
@@ -117,9 +117,9 @@ export const useAuthStore = create<AuthState>()(
     try {
       const response = await api.get<ApiResponse<{ user: User }>>('/users/me')
       
-      if (response.data.success && response.data.data) {
+      if (response.success && response.data) {
         set({
-          user: response.data.data.user,
+          user: response.data.user,
           isAuthenticated: true,
           isLoading: false,
           error: null,
