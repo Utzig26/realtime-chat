@@ -24,7 +24,13 @@ export interface Conversation {
   createdAt: string
   updatedAt: string
   lastMessageAt?: string
-  lastMessage?: Message
+  lastMessage?: {
+    id: string
+    text: string
+    senderId: string
+    senderName: string
+    createdAt: string
+  }
 }
 
 export interface AuthResponse {
