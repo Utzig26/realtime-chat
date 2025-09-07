@@ -58,5 +58,4 @@ export const socketManager = SocketManager.getInstance();
 export const connectSocket = () => socketManager.connect();
 export const disconnectSocket = () => socketManager.disconnect();
 export const getSocket = () => socketManager.getSocket();
-export const isSocketConnected = () => socketManager.isConnected();
 export const destroySocket = () => socketManager.destroy();
