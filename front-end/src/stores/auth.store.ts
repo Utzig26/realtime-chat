@@ -11,7 +11,7 @@ interface AuthState {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  error: string | null
+  error: string | { message: string; details?: Array<{field: string; message: string}> } | null
   hasCheckedAuth: boolean
 
   login: (credentials: LoginRequest) => Promise<void>
@@ -48,10 +48,34 @@ export const useAuthStore = create<AuthState>()(
         throw new Error(response.message || 'Login failed')
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed'
+      let errorData: string | { message: string; details?: Array<{field: string; message: string}> } = 'Login failed'
+      
+      if (error instanceof Error) {
+        // Try to parse as JSON first (for validation errors)
+        try {
+          const parsed = JSON.parse(error.message)
+          if (parsed.message && parsed.details) {
+            errorData = parsed
+          } else if (parsed.message) {
+            // Simple error with just a message
+            errorData = parsed.message
+          } else {
+            errorData = error.message
+          }
+        } catch {
+          errorData = error.message
+        }
+      } else if (typeof error === 'string') {
+        errorData = error
+      } else if (error && typeof error === 'object') {
+        // Handle ApiError or other error objects
+        const errorObj = error as { message?: string; error?: string }
+        errorData = errorObj.message || errorObj.error || 'Login failed'
+      }
+      
       set({
         isLoading: false,
-        error: errorMessage,
+        error: errorData,
         isAuthenticated: false,
         user: null
       })
@@ -77,10 +101,31 @@ export const useAuthStore = create<AuthState>()(
         throw new Error(response.message || 'Registration failed')
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed'
+      let errorData: string | { message: string; details?: Array<{field: string; message: string}> } = 'Registration failed'
+      
+      if (error instanceof Error) {
+        try {
+          const parsed = JSON.parse(error.message)
+          if (parsed.message && parsed.details) {
+            errorData = parsed
+          } else if (parsed.message) {
+            errorData = parsed.message
+          } else {
+            errorData = error.message
+          }
+        } catch {
+          errorData = error.message
+        }
+      } else if (typeof error === 'string') {
+        errorData = error
+      } else if (error && typeof error === 'object') {
+        const errorObj = error as { message?: string; error?: string }
+        errorData = errorObj.message || errorObj.error || 'Registration failed'
+      }
+      
       set({
         isLoading: false,
-        error: errorMessage,
+        error: errorData,
         isAuthenticated: false,
         user: null
       })

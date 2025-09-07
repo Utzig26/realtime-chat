@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { InlineLoading } from './Loading'
+import ErrorMessage from './ErrorMessage'
 import { User, SquareUser, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function RegisterForm() {
@@ -36,11 +37,7 @@ export default function RegisterForm() {
 
   return (
     <div className="space-y-6">
-      {error && (
-        <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-          {error}
-        </div>
-      )}
+      <ErrorMessage error={error} />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
