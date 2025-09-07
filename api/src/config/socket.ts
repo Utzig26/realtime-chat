@@ -6,7 +6,8 @@ import cluster from 'cluster';
 import { MessageService } from '../services/message.service';
 import { SessionService } from '../services/session.service';
 import { UserModel, ConversationModel } from '../models';
-import { MessageNotification, UnreadCountUpdate } from '../types/message.types';
+import { MessageNotification, UnreadCountUpdate, ConversationNotification } from '../types/message.types';
+import { ConversationService } from '../services';
 
 let io: SocketIOServer | null = null;
 
@@ -57,7 +58,6 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
       io.adapter(createAdapter(pubClient, subClient));
       console.log('🔗 Socket.IO Redis adapter configured for multi-instance support');
       
-      // Test Redis connection
       await pubClient.ping();
       console.log('✅ Redis connection verified');
     } catch (error) {
@@ -116,26 +116,22 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
   });
 
   io.on('connection', (socket: any) => {
-    console.log(`User ${socket.user.username} connected`);
-    
+
     socket.join(`user_${socket.user.id}`);
-    console.log(`User ${socket.user.username} joined personal notification room`);
 
     socket.on('join_conversation', (conversationId: string) => {
       socket.join(`conversation_${conversationId}`);
-      console.log(`User ${socket.user.username} joined conversation ${conversationId}`);
     });
 
     socket.on('leave_conversation', (conversationId: string) => {
       socket.leave(`conversation_${conversationId}`);
-      console.log(`User ${socket.user.username} left conversation ${conversationId}`);
     });
 
     socket.on('message:send', async (data: { conversationId: string; text: string }) => {
       try {
         const { conversationId, text } = data;
         
-        if (!conversationId || !text?.trim()) {
+        if (!text?.trim()) {
           socket.emit('message:error', { error: 'Invalid message data' });
           return;
         }
@@ -146,71 +142,36 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
           text
         );
 
-        if (io) {
-          io.to(`conversation_${conversationId}`).emit('message:new', message.toJSON());
-        }
-        
-        const updatedConversation = await ConversationModel.findById(conversationId);
-        if (updatedConversation) {
-          const otherParticipants = updatedConversation.participants.filter(
-            (participantId: any) => participantId.toString() !== socket.user.id
-          );
-          
-          otherParticipants.forEach((participantId: any) => {
-            const participantIdStr = participantId.toString();
-            const unreadCount = updatedConversation.unreadMessages.get(participantIdStr) || 0;
-            
-            const notification: MessageNotification = {
-              senderId: socket.user.id,
-              senderName: socket.user.name,
-              senderUsername: socket.user.username,
-              conversationId: conversationId,
-              messageId: message.id,
-              text: text,
-              timestamp: new Date().toISOString()
-            };
-            
-            if (io) {
-              io.to(`user_${participantIdStr}`).emit('notification:new_message', notification);
-              const unreadUpdate: UnreadCountUpdate = {
-                conversationId: conversationId,
-                unreadCount: unreadCount
-              };
-              io.to(`user_${participantIdStr}`).emit('conversation:unread_update', unreadUpdate);
-            }
-            
-            console.log(`Notification and unread count (${unreadCount}) sent to user ${participantIdStr} for message from ${socket.user.username}`);
-          });
-        }
-        
-        console.log(`Message sent in conversation ${conversationId} by ${socket.user.username}`);
-      } catch (error) {
-        console.error('Error sending message:', error);
-        socket.emit('message:error', { error: 'Failed to send message' });
-      }
-    });
-
-    socket.on('message:read', async (data: { messageId: string; conversationId: string }) => {
-      try {
-        const { messageId, conversationId } = data;
-        
-        if (!messageId || !conversationId) {
-          socket.emit('message:error', { error: 'Invalid read receipt data' });
+        const conversation = await ConversationModel.findById(conversationId);
+        if (!conversation) {
+          socket.emit('message:error', { error: 'Conversation not found' });
           return;
         }
 
-        await MessageService.markMessageAsRead(messageId, socket.user.id);
+        const otherParticipant = conversation.participants.find(
+          (participantId: any) => participantId.toString() !== socket.user.id
+        );
 
-        socket.to(`conversation_${conversationId}`).emit('message:read_receipt', {
-          messageId,
-          readBy: socket.user.id,
-          readAt: new Date()
-        });
+        if (otherParticipant) { await ConversationService.updateLastMessageAt(conversationId, otherParticipant.toString()) }
+
+        const notification: MessageNotification = {
+          senderId: socket.user.id,
+          senderName: socket.user.name,
+          senderUsername: socket.user.username,
+          conversationId: conversationId,
+          messageId: message.id,
+          text: text,
+          timestamp: new Date().toISOString()
+        };
         
-        console.log(`Message ${messageId} marked as read by ${socket.user.username}`);
+        if(io){
+          io.to(`conversation_${conversationId}`).emit('message:new', message.toJSON());
+          io.to(`user_${otherParticipant?.toString()}`).emit('notification:new_message', notification);
+        }
+        
       } catch (error) {
-        console.error('Error marking message as read:', error);
-        socket.emit('message:error', { error: 'Failed to mark message as read' });
+        console.error('Error sending message:', error);
+        socket.emit('message:error', { error: 'Failed to send message' });
       }
     });
 
@@ -223,15 +184,15 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
           return;
         }
 
-        const result = await MessageService.markConversationMessagesAsRead(conversationId, socket.user.id);
+        await MessageService.markConversationMessagesAsRead(conversationId, socket.user.id);
 
         const unreadUpdate: UnreadCountUpdate = {
           conversationId: conversationId,
           unreadCount: 0
         };
+
         socket.emit('conversation:unread_update', unreadUpdate);
         
-        console.log(`${result.markedCount} messages marked as read in conversation ${conversationId} by ${socket.user.username}`);
       } catch (error) {
         console.error('Error marking conversation as read:', error);
         socket.emit('message:error', { error: 'Failed to mark conversation as read' });
@@ -246,5 +207,4 @@ export const initializeSocket = async (server: any): Promise<SocketIOServer> => 
   return io;
 };
 
-// Simple function to get socket instance
 export const getSocketInstance = () => io;
