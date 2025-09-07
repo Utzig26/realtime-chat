@@ -33,22 +33,6 @@ class RedisConfig {
       }
     });
 
-    this.client.on('error', (err: Error) => {
-      console.error('Redis Client Error:', err);
-    });
-
-    this.client.on('connect', () => {
-      console.log('Redis Client Connected');
-    });
-
-    this.client.on('ready', () => {
-      console.log('Redis Client Ready');
-    });
-
-    this.client.on('end', () => {
-      console.log('Redis Client Disconnected');
-    });
-
     await this.client.connect();
     return this.client;
   }

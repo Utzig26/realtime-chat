@@ -141,7 +141,6 @@ export const initializeSocket = async (httpServer: any): Promise<Server> => {
         };
 
         socket.emit('conversation:unread_update', unreadUpdate);
-        
       } catch (error) {
         console.error('Error marking conversation as read:', error);
         socket.emit('message:error', { error: 'Failed to mark conversation as read' });

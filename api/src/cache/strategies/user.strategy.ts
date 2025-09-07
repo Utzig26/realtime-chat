@@ -57,7 +57,6 @@ export class UserCacheStrategy {
         cacheService.delPattern('user:*'),
         cacheService.delPattern('users:list:*')
       ]);
-      console.log('User cache invalidated successfully');
     } catch (error) {
       console.error('Failed to invalidate user cache:', error);
     }
