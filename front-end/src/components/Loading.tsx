@@ -4,7 +4,6 @@ interface LoadingProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   className?: string
   inline?: boolean
-  fullScreen?: boolean
   overlay?: boolean
 }
 
@@ -57,7 +56,6 @@ export const Loading: React.FC<LoadingProps> = ({
   return content
 }
 
-export const Spinner = Loading
 export const InlineLoading = (props: Omit<LoadingProps, 'inline'>) => 
   <Loading inline size="sm" {...props} />
 export const OverlayLoading = (props: Omit<LoadingProps, 'overlay'>) => 
