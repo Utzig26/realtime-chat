@@ -1,11 +1,10 @@
 import express from 'express';
-import { Router, Request, Response } from 'express';
 import { createServer } from 'http';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { connectDatabase } from './config/database';
 import { configurePassport } from './config/passport';
-import { initializeSocket } from './config/socket';
+import { getSocketInstance, initializeSocket } from './config/socket';
 import RedisConfig from './config/redis';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -13,15 +12,16 @@ import conversationRoutes from './routes/conversation.routes';
 import messageRoutes from './routes/message.routes';
 import { errorHandler, responseHandler } from './middleware';
 import { setupSwagger } from './config/swagger';
+import cluster from 'cluster';
+import { setupMaster, setupWorker } from '@socket.io/sticky';
+import { setupPrimary, createAdapter } from '@socket.io/cluster-adapter';
 
+const PORT = process.env.PORT || 5000;
+
+const numCPUs = require("os").cpus().length;
 const app = express();
-const server = createServer(app);
-const route = Router();
-const PORT = process.env.PORT;
-const NODE_ENV = process.env.NODE_ENV;
 
-export const startServer = async () => {
-  try {
+async function buildApp() {
     await connectDatabase();
     await RedisConfig.getInstance().connect();
     
@@ -30,8 +30,6 @@ export const startServer = async () => {
     app.use(cors({
       origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000'], 
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Cookie']
     }));
     
     app.use(express.json());
@@ -44,31 +42,52 @@ export const startServer = async () => {
     app.use('/users', userRoutes);
     app.use('/conversations', conversationRoutes);
     app.use('/', messageRoutes);
-    app.use('/', route);
 
     app.use(errorHandler);
 
-    await initializeSocket(server);
-
-    // Only listen if not in cluster mode (cluster handles listening)
-    if (!process.env.WORKER_ID) {
-      server.listen(PORT, () => {
-        console.log(`Server running on port ${PORT} | ${NODE_ENV}`);
-        console.log('Socket.IO server initialized');
-      });
-    } else {
-      console.log(`Worker ${process.env.WORKER_ID} server configured | ${NODE_ENV}`);
-      console.log('Socket.IO server initialized');
-    }
-
-    return server;
-  } catch (error) {
-    console.error('Error starting server:', error);
-    process.exit(1);
-  }
+    console.log('App built');
+    return createServer(app);
 };
 
-if (require.main === module) {
-  startServer();
-}
+if (cluster.isPrimary) {
+  const httpServer = createServer();
 
+  setupMaster(httpServer, {
+    loadBalancingMethod: "least-connection",
+  });
+
+  setupPrimary();
+
+  httpServer.listen(PORT, () => {
+    console.log(`MASTER Listening on port ${PORT}`);
+  });
+
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+
+  cluster.on("exit", (worker) => {
+    setTimeout(() => {
+      console.log(`WORKER ${worker.process.pid} is down, restarting...`);
+      cluster.fork();
+    }, 1000);
+  });
+
+  cluster.on('online', (worker) => {
+    console.log(`WORKER ${worker.process.pid} is up`);
+  });
+} else {
+  (async () => {
+    const httpServer = await buildApp();
+
+    await initializeSocket(httpServer);
+    const io = getSocketInstance();
+    if (!io) {
+      process.exit(1);
+    }
+
+    io.adapter(createAdapter());
+
+    setupWorker(io);
+  })();  
+}
