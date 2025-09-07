@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware'
 import { api } from '@/lib/api'
 import { destroySocket } from '@/lib/socket'
 import { User, LoginRequest, RegisterRequest, ApiResponse } from '@/types'
+import { useConversationStore } from './conversation.store'
+import { useMessageStore } from './message.store'
+import { useUserStore } from './user.store'
 
 interface AuthState {
   user: User | null
@@ -94,6 +97,10 @@ export const useAuthStore = create<AuthState>()(
       console.warn('Logout API call failed')
     } finally {
       destroySocket()
+      
+      useConversationStore.getState().clearAll()
+      useMessageStore.getState().clearAll()
+      useUserStore.getState().clearAll()
       
       set({
         user: null,

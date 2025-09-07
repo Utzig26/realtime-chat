@@ -22,6 +22,7 @@ interface UserState {
   addUser: (user: User) => void
   clearError: () => void
   resetPagination: () => void
+  clearAll: () => void
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -136,6 +137,21 @@ export const useUserStore = create<UserState>((set, get) => ({
       loadingMore: false,
       users: new Map(),
       lastFetched: null
+    })
+  },
+
+  clearAll: () => {
+    set({
+      users: new Map(),
+      loading: false,
+      error: null,
+      lastFetched: null,
+      currentPage: 1,
+      hasNextPage: false,
+      hasPrevPage: false,
+      totalUsers: 0,
+      totalPages: 0,
+      loadingMore: false
     })
   }
 }))

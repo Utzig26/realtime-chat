@@ -14,6 +14,7 @@ interface MessageState {
   clearMessages: (conversationId: string) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
+  clearAll: () => void
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -70,5 +71,13 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
   setError: (error: string | null) => {
     set({ error })
+  },
+
+  clearAll: () => {
+    set({
+      messages: new Map(),
+      loading: false,
+      error: null
+    })
   }
 }))

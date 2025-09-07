@@ -13,6 +13,7 @@ interface ConversationState {
   updateConversation: (id: string, updates: Partial<Conversation>) => void
   markAsRead: (conversationId: string) => void
   clearError: () => void
+  clearAll: () => void
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
@@ -86,5 +87,13 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
   clearError: () => {
     set({ error: null })
+  },
+
+  clearAll: () => {
+    set({
+      conversations: new Map(),
+      loading: false,
+      error: null
+    })
   }
 }))
