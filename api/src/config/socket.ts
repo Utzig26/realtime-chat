@@ -17,7 +17,10 @@ export const initializeSocket = async (httpServer: any): Promise<Server> => {
       credentials: true
     },
     transports: ['websocket'],
-    allowEIO3: true,
+    pingTimeout: 120000,
+    pingInterval: 30000,
+    connectTimeout: 60000, 
+    upgradeTimeout: 30000 
   });
 
   io.use(async (socket: any, next) => {

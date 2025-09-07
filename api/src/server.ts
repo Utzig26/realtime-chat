@@ -46,7 +46,14 @@ async function buildApp() {
     app.use(errorHandler);
 
     console.log('App built');
-    return createServer(app);
+    const httpServer = createServer(app);
+    
+    httpServer.headersTimeout = 60000;
+    httpServer.keepAliveTimeout = 30000;
+    httpServer.requestTimeout = 120000;
+    httpServer.timeout = 120000;
+    
+    return httpServer;
 };
 
 if (cluster.isPrimary) {

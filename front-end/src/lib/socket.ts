@@ -17,7 +17,10 @@ class SocketManager {
     if (!this.socket) {
       this.socket = io(process.env.NEXT_PUBLIC_API_URL!, {
         withCredentials: true,
-        transports: ['websocket']
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
       });
     }
 
@@ -30,7 +33,6 @@ class SocketManager {
 
   disconnect(): void {
     if (this.socket?.connected) {
-      console.log('Disconnecting socket...');
       this.socket.disconnect();
     }
   }
@@ -58,4 +60,5 @@ export const socketManager = SocketManager.getInstance();
 export const connectSocket = () => socketManager.connect();
 export const disconnectSocket = () => socketManager.disconnect();
 export const getSocket = () => socketManager.getSocket();
+export const isSocketConnected = () => socketManager.isConnected();
 export const destroySocket = () => socketManager.destroy();
